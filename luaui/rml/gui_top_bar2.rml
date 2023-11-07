@@ -6,7 +6,7 @@
 		<link type="text/rcss" href="rml.rcss" />
 		<style>
 			body {
-				padding-top: 100px;
+				top: 100px;
 				/* width: 1000dp;
 				height: 400dp; */
 				/* background-color: red; */
@@ -15,8 +15,9 @@
 				font-family: Exo 2;
 				font-weight: normal;
 				font-style: normal;
-				font-size: 1em;
+				font-size: 1.5em;
 				color: white;
+				cursor: cursor_default;
 			}
 
 			input.range slidertrack {
@@ -68,7 +69,7 @@
 				image-color: rgba(85, 85, 85, 80);
 			}
 
-			#windbox {
+			.windbox {
 				/* decorator: image("stripes.png" none repeat left top);
 				image-color: rgba(85, 85, 85, 80); */
 				background-color: rgba(0, 0, 0, 200);
@@ -196,9 +197,10 @@
 			}
 
 			#blades {
-				opacity: .5;
+				opacity: .3;
 				/* animation: 6s linear infinite spin; */
 				position: absolute;
+
 			}
 
 			@keyframes spin {
@@ -208,6 +210,28 @@
 
 				100% {
 					transform: rotate(0deg);
+				}
+			}
+
+			#waves {
+				width: 100%;
+				height: 100%;
+				opacity: .3;
+				animation: 10s linear infinite bob;
+
+			}
+
+			@keyframes bob {
+				0% {
+					transform: translateY(-10dp)
+				}
+
+				50% {
+					transform: translateY(5dp)
+				}
+
+				100% {
+					transform: translateY(-10dp);
 				}
 			}
 
@@ -236,6 +260,7 @@
 			}
 
 			tooltip:hover>tooltiptext {
+				/* transition: display 1.5s; */
 				display: block;
 			}
 
@@ -268,7 +293,9 @@
 				background-color: rgb(83, 83, 83);
 				border-radius: 2px;
 				width: 100%;
+				transform: rotate(180deg)
 			}
+
 
 			#metalstorage fill {
 				background-color: rgb(196, 196, 196);
@@ -314,13 +341,13 @@
 			<div class="flex">
 				<div class="rbox" style="margin-right:8px; flex:5">
 					<div class="" style="width: 10%;">
-						<img src="metal.png" width="50" height="50" />
+						<img src="/luaui/images/metal.png" width="50" height="50" />
 					</div>
 					<div class="" style="width: 90%;">
 						<div class=" flex" style="width: 100%; flex:1">
 							<tooltip style="flex:1">
 								<p style="text-align:center; color:#f07d7d">-{{resources.metal.pull}}</p>
-								<tooltiptext>tooltip text here</tooltiptext>
+								<tooltiptext>%%ui.topbar.pullTooltip</tooltiptext>
 							</tooltip>
 							<tooltip style="flex:1">
 								<p style="text-align:center; color:rgb(240,180,145)">-{{resources.metal.expense}}</p>
@@ -338,7 +365,7 @@
 						<div class="flex" style="width: 100%; flex:1;">
 							<tooltip style="flex:1">
 								<p style="text-align:center; color:rgb(120,235,120)">+{{resources.metal.income}}</p>
-								<tooltiptext>metal income</tooltiptext>
+								<tooltiptext>The quick brown fox jumps over the lazy dog</tooltiptext>
 							</tooltip>
 							<div style=" flex:4" class="barwrap">
 								<progress id="metalstorage" value="400" max="1000"></progress>
@@ -351,7 +378,7 @@
 				</div>
 				<div class="rbox " style="margin-right:8px; flex:5">
 					<div class="" style="width: 10%;">
-						<img src="energy.png" width="50" height="50" />
+						<img src="/luaui/images/energy.png" width="50" height="50" />
 					</div>
 					<div class="" style="width: 90%;">
 						<div class=" flex" style="width: 100%; flex:1">
@@ -388,10 +415,10 @@
 						</div>
 					</div>
 				</div>
-				<div id="windbox" style="margin-right:8px; flex:1; height:86dp">
-					<tooltip style="width:100%; height:100%">
-						<img id="blades" src="wind-blades.png" width="75" height="75" />
-						<div style="padding-right:4px">
+				<div id="windbox" class="windbox" style="margin-right:8px; flex:1; height:70dp">
+					<tooltip style="width:100%; height:100%;">
+						<img id="blades" src="/luaui/images/wind-blades.png" width="75" height="75" />
+						<div style="padding-right:4dp">
 							<p class="ontop" style="text-align: right;">{{resources.wind.min}}</p>
 							<p class="ontop" style="text-align: center;">{{resources.wind.current}}</p>
 							<p class="ontop" style="text-align: right;">{{resources.wind.max}}</p>
@@ -399,11 +426,12 @@
 						<tooltiptext>wind</tooltiptext>
 					</tooltip>
 				</div>
-				<div id="windbox" style="margin-right:8px; flex:1; height:86dp">
-					<tooltip style="width:100%; height:100%">
-						<img id="blades" src="wind-blades.png" width="75" height="75" />
-						<div style="display: flex; align-items: center; justify-content: center;height:100%">
-							<p class="ontop" style="text-align: center; margin:auto">{{resources.tidal.current}}</p>
+				<div id="tidebox" class="windbox" style="margin-right:8px; flex:1; height:70dp">
+					<tooltip style="width:100%; height:100%;">
+						<div style="width:100%; height:100%;position:relative">
+							<img id="waves" src="/luaui/images/tidal-waves.png" />
+							<p class="ontop" style="position: absolute;  top: 50%;  left: 50%;  transform: translate(-50%, -50%);">
+								{{resources.tidal.current}}</p>
 						</div>
 						<tooltiptext>tidal</tooltiptext>
 					</tooltip>

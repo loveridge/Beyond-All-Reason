@@ -17,36 +17,37 @@ if (System == nil) then
 	if tracy == nil then
 		Spring.Echo("Tracy: No support detected, replacing tracy.* with function stubs.")
 		tracy = {}
-		tracy.ZoneBeginN = function () return end 
-		tracy.ZoneBegin = function () return end 
-		tracy.ZoneEnd = function () return end --Spring.Echo("No Tracy") return end 
-		tracy.Message = function () return end 
-		tracy.ZoneName = function () return end 
-		tracy.ZoneText = function () return end 
+		tracy.ZoneBeginN = function() return end
+		tracy.ZoneBegin = function() return end
+		tracy.ZoneEnd = function() return end --Spring.Echo("No Tracy") return end
+		tracy.Message = function() return end
+		tracy.ZoneName = function() return end
+		tracy.ZoneText = function() return end
 	end
-	
+
 	System = {
 		--
 		--  Custom LuaUI variables
 		--
-		Commands = Commands,
-		fontHandler = fontHandler,
-		LUAUI_DIRNAME = LUAUI_DIRNAME,
+		Commands        = Commands,
+		fontHandler     = fontHandler,
+		LUAUI_DIRNAME   = LUAUI_DIRNAME,
 
 		--
 		--  Custom Spring tables
 		--
-		VFS = VFS,
-		Script = Script,
-		Spring = Spring,
-		Engine = Engine,
-		Platform = Platform,
-		Game = Game,
-		gl = gl,
-		GL = GL,
-		CMD = CMD,
-		CMDTYPE = CMDTYPE,
-		LOG = LOG,
+		VFS             = VFS,
+		Script          = Script,
+		Spring          = Spring,
+		Engine          = Engine,
+		Platform        = Platform,
+		Game            = Game,
+		gl              = gl,
+		GL              = GL,
+		CMD             = CMD,
+		CMDTYPE         = CMDTYPE,
+		LOG             = LOG,
+		rmlui           = rmlui,
 
 		UnitDefs        = UnitDefs,
 		UnitDefNames    = UnitDefNames,
@@ -58,19 +59,19 @@ if (System == nil) then
 		--
 		--  Standard libraries
 		--
-		io = io,
-		os = os,
-		math = math,
-		debug = debug,
-		tracy = tracy,
-		table = table,
-		string = string,
-		package = package,
-		coroutine = coroutine,
+		io              = io,
+		os              = os,
+		math            = math,
+		debug           = debug,
+		tracy           = tracy,
+		table           = table,
+		string          = string,
+		package         = package,
+		coroutine       = coroutine,
 
 		-- Custom libraries
 
-		Json = Json,
+		Json            = Json,
 
 		-- luasocket
 		socket          = socket,
@@ -78,45 +79,45 @@ if (System == nil) then
 		--
 		--  Standard functions and variables
 		--
-		assert         = assert,
-		error          = error,
+		assert          = assert,
+		error           = error,
 
-		print          = print,
+		print           = print,
 
-		next           = next,
-		pairs          = pairs,
+		next            = next,
+		pairs           = pairs,
 		pairsByKeys    = pairsByKeys, -- custom: defined in `common\tablefunctions.lua`
-		ipairs         = ipairs,
+		ipairs          = ipairs,
 
-		tonumber       = tonumber,
-		tostring       = tostring,
-		type           = type,
+		tonumber        = tonumber,
+		tostring        = tostring,
+		type            = type,
 
-		collectgarbage = collectgarbage,
-		gcinfo         = gcinfo,
+		collectgarbage  = collectgarbage,
+		gcinfo          = gcinfo,
 
-		unpack         = unpack,
-		select         = select,
+		unpack          = unpack,
+		select          = select,
 
-		dofile         = dofile,
-		loadfile       = loadfile,
-		loadlib        = loadlib,
-		loadstring     = loadstring,
-		require        = require,
+		dofile          = dofile,
+		loadfile        = loadfile,
+		loadlib         = loadlib,
+		loadstring      = loadstring,
+		require         = require,
 
-		getmetatable   = getmetatable,
-		setmetatable   = setmetatable,
+		getmetatable    = getmetatable,
+		setmetatable    = setmetatable,
 
-		rawequal       = rawequal,
-		rawget         = rawget,
-		rawset         = rawset,
+		rawequal        = rawequal,
+		rawget          = rawget,
+		rawset          = rawset,
 
-		getfenv        = getfenv,
-		setfenv        = setfenv,
+		getfenv         = getfenv,
+		setfenv         = setfenv,
 
-		pcall          = pcall,
-		xpcall         = xpcall,
+		pcall           = pcall,
+		xpcall          = xpcall,
 
-		_VERSION       = _VERSION
+		_VERSION        = _VERSION
 	}
 end

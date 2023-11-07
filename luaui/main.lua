@@ -18,13 +18,14 @@ local spSendCommands = Spring.SendCommands
 spSendCommands("ctrlpanel " .. LUAUI_DIRNAME .. "ctrlpanel.txt")
 
 VFS.Include("init.lua", nil, VFS.ZIP)
-Spring.I18N.setLanguage( Spring.GetConfigString('language', 'en') )
+Spring.I18N.setLanguage(Spring.GetConfigString('language', 'en'))
 
-VFS.Include(LUAUI_DIRNAME .. "utils.lua",      nil, VFS.ZIP)
-VFS.Include(LUAUI_DIRNAME .. "setupdefs.lua",  nil, VFS.ZIP)
-VFS.Include(LUAUI_DIRNAME .. "savetable.lua",  nil, VFS.ZIP)
-VFS.Include(LUAUI_DIRNAME .. "debug.lua",      nil, VFS.ZIP)
-VFS.Include(LUAUI_DIRNAME .. "layout.lua",     nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "rml.lua", nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "utils.lua", nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "setupdefs.lua", nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "savetable.lua", nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "debug.lua", nil, VFS.ZIP)
+VFS.Include(LUAUI_DIRNAME .. "layout.lua", nil, VFS.ZIP)
 VFS.Include(LUAUI_DIRNAME .. "barwidgets.lua", nil, VFS.ZIP)
 
 --------------------------------------------------------------------------------
@@ -42,7 +43,6 @@ function Update()
 	widgetHandler:Update()
 	return
 end
-
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -139,7 +139,6 @@ function GroupChanged(groupID)
 	return widgetHandler:GroupChanged(groupID)
 end
 
-
 --
 -- The unit (and some of the Draw) call-ins are handled
 -- differently (see LuaUI/widgets.lua / UpdateCallIns())
@@ -147,4 +146,3 @@ end
 
 
 --------------------------------------------------------------------------------
-
