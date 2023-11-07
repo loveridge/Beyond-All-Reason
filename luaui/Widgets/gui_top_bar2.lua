@@ -38,30 +38,7 @@ end
 
 
 local dataModel = {
-	resources = {
-		energy = {
-			current = 0,
-			storage = 0,
-			pull = 0,
-			income = 0,
-			expense = 0
-		},
-		metal = {
-			current = 0,
-			storage = 0,
-			pull = 0,
-			income = 0,
-			expense = 0
-		},
-		wind = {
-			min = Game.windMin,
-			max = windMax,
-			current = 0
-		},
-		tidal = {
-			current = Game.tidal
-		}
-	}
+
 }
 
 function widget:filterList(ev, elm)
@@ -106,8 +83,31 @@ function widget:Initialize()
 	checkSelfStatus()
 	context = rmlui.GetContext("overlay")
 
+	dataModel.resources = {
+		energy = {
+			current = 0,
+			storage = 0,
+			pull = 0,
+			income = 0,
+			expense = 0
+		},
+		metal = {
+			current = 0,
+			storage = 0,
+			pull = 0,
+			income = 0,
+			expense = 0
+		},
+		wind = {
+			min = Game.windMin,
+			max = windMax,
+			current = 0
+		},
+		tidal = {
+			current = Game.tidal
+		}
+	}
 	dm = context:OpenDataModel("data", dataModel)
-
 
 	Spring.Echo("TESTDOCUMENT", document)
 	local widgetsList = {}
@@ -201,7 +201,7 @@ function widget:Update(dt)
 	if sec > 0.033 then
 		sec = 0
 		local currentLevel, storage, pull, income, expense, share, sent, received = spGetTeamResources(myTeamID, 'metal')
-		dm.resources.metal = {
+		local metal = {
 			current = short(currentLevel),
 			storage = short(storage),
 			pull = short(pull),
@@ -211,7 +211,7 @@ function widget:Update(dt)
 		metalbar:SetAttribute("max", "" .. storage)
 		metalbar:SetAttribute("value", "" .. currentLevel)
 		currentLevel, storage, pull, income, expense, share, sent, received = spGetTeamResources(myTeamID, 'energy')
-		dm.resources.energy = {
+		local energy = {
 			current = short(currentLevel),
 			storage = short(storage),
 			pull = short(pull),
@@ -226,11 +226,17 @@ function widget:Update(dt)
 
 		windspeed                 = select(4, spGetWind())
 		dm.resources.wind.current = sformat('%.1f', windspeed)
+		dm.resources              = {
+			metal = metal,
+			energy = energy,
+			wind = dm.resources.wind,
+			tidal = dm.resources.tidal
+		}
 		-- windspeed                 = 19
 		-- bladerotation             = (bladerotation + windspeed / 4) % 360
 		-- blades.style.transform    = "rotate(" .. bladerotation .. "deg)";
 
-		dm:__SetDirty("resources")
+		-- dm:__SetDirty("resources")
 	end
 
 	sec2 = sec2 + dt
