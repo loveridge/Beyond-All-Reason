@@ -10,6 +10,7 @@ if (RmlGuard or not rmlui) then
 end
 RmlGuard = true
 
+rmlui.CreateContext("overlay")
 
 rmlui.LoadFontFace("fonts/Poppins-Regular.otf", true)
 rmlui.LoadFontFace("fonts/Exo2-SemiBold.otf", true)
