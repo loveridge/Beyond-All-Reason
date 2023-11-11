@@ -1,7 +1,7 @@
 function widget:GetInfo()
 	return {
 		name = "Top Bar 2",
-		desc = "Shows Resources, wind speed, commander counter, and various options. RmlUi edition",
+		desc = "Shows Resources and wind speed. RmlUi edition",
 		author = "Floris & lov",
 		date = "2023",
 		license = "GNU GPL, v2 or later",
@@ -23,43 +23,10 @@ local windMax = Game.windMax
 local document
 local context
 local dm
-local widgetList = {
-}
-
-local function togglewidget(ev, i)
-	Spring.Echo("toggle", i, ev.type)
-	widgetHandler:ToggleWidget(widgetList[i].name)
-	local order = widgetHandler.orderList[widgetList[i].name]
-	local enabled = (order and (order > 0)) == true
-	widgetList[i].enabled = enabled
-	widgetList[i].active = not widgetList[i].active
-	-- ev.target_element:SetClass("enabled", widgetList[i].enabled)
-end
-
 
 local dataModel = {
 
 }
-
-function widget:filterList(ev, elm)
-	local inputText = elm:GetAttribute("value")
-	local i
-	Spring.Echo(inputText)
-	for i = 1, #widgetList do
-		local w = widgetList[i]
-		local data = w.data
-		w.filtered = not ((not inputText or inputText == '') or
-			(data.name and string.find(string.lower(data.name), string.lower(inputText), nil, true) or
-				(data.desc and string.find(string.lower(data.desc), string.lower(inputText), nil, true)) or
-				(data.basename and string.find(string.lower(data.basename), string.lower(inputText), nil, true)) or
-				(data.author and string.find(string.lower(data.author), string.lower(inputText), nil, true))))
-	end
-	dm:__SetDirty("widgets")
-end
-
-function widget:toggleWidget(index)
-	Spring.Echo("toggle", index)
-end
 
 local myAllyTeamID
 local myAllyTeamList
@@ -71,10 +38,8 @@ local function checkSelfStatus()
 	myAllyTeamList = Spring.GetTeamList(myAllyTeamID)
 	myTeamID = Spring.GetMyTeamID()
 	myPlayerID = Spring.GetMyPlayerID()
-	-- if myTeamID ~= gaiaTeamID and UnitDefs[Spring.GetTeamRulesParam(myTeamID, 'startUnit')] then
-	-- 	comTexture = ':n:Icons/' .. UnitDefs[Spring.GetTeamRulesParam(myTeamID, 'startUnit')].name .. '.png'
-	-- end
 end
+
 local metalbar
 local energybar
 local mmSlider
@@ -109,10 +74,6 @@ function widget:Initialize()
 	}
 	dm = context:OpenDataModel("data", dataModel)
 
-	Spring.Echo("TESTDOCUMENT", document)
-	local widgetsList = {}
-
-	-- addWidgets()
 	document = context:LoadDocument("luaui/rml/gui_top_bar2.rml", widget)
 	metalbar = document:GetElementById("metalstorage")
 	energybar = document:GetElementById("energystorage")
@@ -121,19 +82,13 @@ function widget:Initialize()
 	document:Show()
 end
 
-function widget:GameFrame(f)
-	-- elem.inner_rml = "" .. f
-end
-
 function widget:Shutdown()
 	if document then
 		document:Close()
 	end
-	context:RemoveDataModel("data")
-end
-
-function widget:buttonPress(str)
-	Spring.Echo("widgetbuttonpress", str)
+	if context then
+		context:RemoveDataModel("data")
+	end
 end
 
 function widget:adjustConversion(element, event)
@@ -167,35 +122,6 @@ function widget:Update(dt)
 		checkSelfStatus()
 		init()
 	end
-
-	local mx, my = spGetMouseState()
-	local speedFactor, _, isPaused = Spring.GetGameSpeed()
-	-- if not isPaused then
-	-- 	if blinkDirection then
-	-- 		blinkProgress = blinkProgress + (dt * 9)
-	-- 		if blinkProgress > 1 then
-	-- 			blinkProgress = 1
-	-- 			blinkDirection = false
-	-- 		end
-	-- 	else
-	-- 		blinkProgress = blinkProgress - (dt / (blinkProgress * 1.5))
-	-- 		if blinkProgress < 0 then
-	-- 			blinkProgress = 0
-	-- 			blinkDirection = true
-	-- 		end
-	-- 	end
-	-- end
-
-	-- now = os.clock()
-	-- if now > nextGuishaderCheck and widgetHandler.orderList["GUI Shader"] ~= nil then
-	-- 	nextGuishaderCheck = now + guishaderCheckUpdateRate
-	-- 	if guishaderEnabled == false and widgetHandler.orderList["GUI Shader"] ~= 0 then
-	-- 		guishaderEnabled = true
-	-- 		init()
-	-- 	elseif guishaderEnabled and (widgetHandler.orderList["GUI Shader"] == 0) then
-	-- 		guishaderEnabled = false
-	-- 	end
-	-- end
 
 	sec = sec + dt
 	if sec > 0.033 then
@@ -250,49 +176,12 @@ function widget:Update(dt)
 		end
 		sec2 = 0
 	end
+end
 
-	-- -- wind
-	-- if gameFrame ~= lastFrame then
-	-- end
-
-	-- -- coms
-	-- if displayComCounter then
-	-- 	secComCount = secComCount + dt
-	-- 	if secComCount > 0.5 then
-	-- 		secComCount = 0
-	-- 		countComs()
-	-- 	end
-	-- end
-
-	-- -- rejoin
-	-- if not isReplay and serverFrame then
-	-- 	t = t - dt
-	-- 	if t <= 0 then
-	-- 		t = t + UPDATE_RATE_S
-
-	-- 		-- update/estimate serverFrame (because widget:GameProgress(n) only happens every 150 frames)
-	-- 		if gameStarted and not isPaused then
-	-- 			serverFrame = serverFrame + math.ceil(speedFactor * UPDATE_RATE_F)
-	-- 		end
-
-	-- 		local framesLeft = serverFrame - gameFrame
-	-- 		if framesLeft > CATCH_UP_THRESHOLD then
-	-- 			userIsRejoining = true
-	-- 			if widgetHandler.orderList["Rejoin progress"] < 1 then
-	-- 				showRejoinUI = true
-	-- 				updateRejoin()
-	-- 			else
-	-- 				showRejoinUI = false
-	-- 			end
-	-- 		elseif userIsRejoining then
-	-- 			userIsRejoining = false
-	-- 			local prevShowRejoinUI = showRejoinUI
-	-- 			showRejoinUI = false
-	-- 			if prevShowRejoinUI then
-	-- 				updateRejoin()
-	-- 				init()
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
+function widget:RecvLuaMsg(msg, playerID)
+	if msg:sub(1, 19) == 'LobbyOverlayActive0' then
+		document:Show()
+	elseif msg:sub(1, 19) == 'LobbyOverlayActive1' then
+		document:Hide()
+	end
 end
