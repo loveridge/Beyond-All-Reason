@@ -100,7 +100,7 @@ return {
 				stages = 8,
 				--paralyzetime = 20,
 				proximitypriority = -4,
-				range = 1500,
+				range = 750,
 				reloadtime = 20,
 				rgbcolor = "0.8 0.99 0.11",
 				soundhit = "bloodsplash3",
@@ -108,6 +108,7 @@ return {
 				sprayangle = 1024,
 				tolerance = 5000,
 				turret = true,
+				weapontype = "Cannon",
 				weapontimer = 0.2,
 				weaponvelocity = 520,
 				damage = {

@@ -14,32 +14,34 @@ local burrowName = 'raptor_hive'
 
 local raptorTurrets = {}
 
-raptorTurrets["raptor_turrets"] 				= { minQueenAnger = 0, 	spawnedPerWave = 2, maxExisting = 20,	maxQueenAnger = 1000,}
-raptorTurrets["raptor_turrets_acid"] 			= { minQueenAnger = 15, spawnedPerWave = 1, maxExisting = 10,	maxQueenAnger = 1000,}
-raptorTurrets["raptor_turrets_electric"] 		= { minQueenAnger = 15, spawnedPerWave = 1, maxExisting = 10,	maxQueenAnger = 1000,}
-raptorTurrets["raptor_turretl"] 				= { minQueenAnger = 30, spawnedPerWave = 2, maxExisting = 6,	maxQueenAnger = 1000,}
-raptorTurrets["raptor_turretl_acid"] 			= { minQueenAnger = 45, spawnedPerWave = 1, maxExisting = 3,	maxQueenAnger = 1000,}
-raptorTurrets["raptor_turretl_electric"] 		= { minQueenAnger = 45, spawnedPerWave = 1, maxExisting = 3,	maxQueenAnger = 1000,}
+-- If you use fractions in spawnerPerWave, it becomes a percentage chance to spawn one.
+
+raptorTurrets["raptor_turrets"] 				= { minQueenAnger = 0, 	spawnedPerWave = 0.5, 	maxExisting = 20,	maxQueenAnger = 1000,}
+raptorTurrets["raptor_turrets_acid"] 			= { minQueenAnger = 15, spawnedPerWave = 0.25, 	maxExisting = 10,	maxQueenAnger = 1000,}
+raptorTurrets["raptor_turrets_electric"] 		= { minQueenAnger = 15, spawnedPerWave = 0.25, 	maxExisting = 10,	maxQueenAnger = 1000,}
+raptorTurrets["raptor_turretl"] 				= { minQueenAnger = 30, spawnedPerWave = 0.5, 	maxExisting = 6,	maxQueenAnger = 1000,}
+raptorTurrets["raptor_turretl_acid"] 			= { minQueenAnger = 45, spawnedPerWave = 0.25, 	maxExisting = 3,	maxQueenAnger = 1000,}
+raptorTurrets["raptor_turretl_electric"] 		= { minQueenAnger = 45, spawnedPerWave = 0.25, 	maxExisting = 3,	maxQueenAnger = 1000,}
 
 if not Spring.GetModOptions().unit_restrictions_nonukes then
 
-	raptorTurrets["raptor_turrets_antinuke"] 	= { minQueenAnger = 15, spawnedPerWave = 1, maxExisting = 10,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretl_antinuke"] 	= { minQueenAnger = 45, spawnedPerWave = 1, maxExisting = 3,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretxl_meteor"]		= { minQueenAnger = 75, spawnedPerWave = 2, maxExisting = 6,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turrets_antinuke"] 	= { minQueenAnger = 15, spawnedPerWave = 0.25, 	maxExisting = 10,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretl_antinuke"] 	= { minQueenAnger = 45, spawnedPerWave = 0.25, 	maxExisting = 3,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretxl_meteor"]		= { minQueenAnger = 75, spawnedPerWave = 0.5, 	maxExisting = 6,	maxQueenAnger = 1000,}
 
 end
 if not Spring.GetModOptions().unit_restrictions_noair then
 
-	raptorTurrets["raptor_turrets_antiair"] 	= { minQueenAnger = 0, 	spawnedPerWave = 2, maxExisting = 20,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretl_antiair"] 	= { minQueenAnger = 30, spawnedPerWave = 2, maxExisting = 6,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretxl_antiair"]	= { minQueenAnger = 60, spawnedPerWave = 1, maxExisting = 2,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turrets_antiair"] 	= { minQueenAnger = 0, 	spawnedPerWave = 0.5, 	maxExisting = 20,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretl_antiair"] 	= { minQueenAnger = 30, spawnedPerWave = 0.5, 	maxExisting = 6,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretxl_antiair"]	= { minQueenAnger = 60, spawnedPerWave = 0.25, 	maxExisting = 2,	maxQueenAnger = 1000,}
 
 end
 if not Spring.GetModOptions().unit_restrictions_nolrpc then
 	
-	raptorTurrets["raptor_turretxl"]			= { minQueenAnger = 60, spawnedPerWave = 1, maxExisting = 2,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretxl_electric"]	= { minQueenAnger = 75, spawnedPerWave = 1, maxExisting = 1,	maxQueenAnger = 1000,}
-	raptorTurrets["raptor_turretxl_acid"]		= { minQueenAnger = 75, spawnedPerWave = 1, maxExisting = 1,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretxl"]			= { minQueenAnger = 60, spawnedPerWave = 0.25, 	maxExisting = 2,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretxl_electric"]	= { minQueenAnger = 75, spawnedPerWave = 0.25, 	maxExisting = 1,	maxQueenAnger = 1000,}
+	raptorTurrets["raptor_turretxl_acid"]		= { minQueenAnger = 75, spawnedPerWave = 0.25, 	maxExisting = 1,	maxQueenAnger = 1000,}
 end
 
 local raptorEggs = { -- Specify eggs dropped by unit here, requires useEggs to be true, if some unit is not specified here, it drops random egg colors.
@@ -283,6 +285,7 @@ raptorBehaviours = {
 		[UnitDefNames["raptorr2"].id] = true,
 		[UnitDefNames["raptor_turrets"].id] = true,
 		[UnitDefNames["raptor_turretl"].id] = true,
+		[UnitDefNames["raptor_turretxl"].id] = true,
 		[UnitDefNames["raptor_turretxl_meteor"].id] = true,
 		[UnitDefNames["raptor_hive"].id] = true,
 	},
@@ -292,13 +295,13 @@ raptorBehaviours = {
 local optionValues = {
 
 	[difficulties.veryeasy] = {
-		gracePeriod       = 8 * Spring.GetModOptions().raptor_graceperiodmult * 60,
-		queenTime      	  = 50 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
+		gracePeriod       = 9 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		queenTime      	  = 55 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 120 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 240 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 120 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 240 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 120 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 1,
-		angerBonus        = 1,
+		angerBonus        = 0.1,
 		maxXP			  = 0.5,
 		spawnChance       = 0.1,
 		damageMod         = 0.4,
@@ -311,13 +314,13 @@ local optionValues = {
 	},
 
 	[difficulties.easy] = {
-		gracePeriod       = 7 * Spring.GetModOptions().raptor_graceperiodmult * 60,
-		queenTime      	  = 45 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
+		gracePeriod       = 8 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		queenTime      	  = 50 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 90 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 210 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 100 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 210 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 100 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 1,
-		angerBonus        = 1.2,
+		angerBonus        = 0.15,
 		maxXP			  = 1,
 		spawnChance       = 0.2,
 		damageMod         = 0.6,
@@ -329,13 +332,13 @@ local optionValues = {
 		queenResistanceMult   = 0.75,
 	},
 	[difficulties.normal] = {
-		gracePeriod       = 6 * Spring.GetModOptions().raptor_graceperiodmult * 60,
-		queenTime      	  = 40 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
+		gracePeriod       = 7 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		queenTime      	  = 45 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 60 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 180 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 80 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 180 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 80 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 3,
-		angerBonus        = 1.4,
+		angerBonus        = 0.20,
 		maxXP			  = 1.5,
 		spawnChance       = 0.3,
 		damageMod         = 0.8,
@@ -347,13 +350,13 @@ local optionValues = {
 		queenResistanceMult   = 1,
 	},
 	[difficulties.hard] = {
-		gracePeriod       = 5 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		gracePeriod       = 6 * Spring.GetModOptions().raptor_graceperiodmult * 60,
 		queenTime      	  = 40 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 50 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 150 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 60 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 150 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 60 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 3,
-		angerBonus        = 1.6,
+		angerBonus        = 0.25,
 		maxXP			  = 2,
 		spawnChance       = 0.4,
 		damageMod         = 1,
@@ -365,13 +368,13 @@ local optionValues = {
 		queenResistanceMult   = 1.33,
 	},
 	[difficulties.veryhard] = {
-		gracePeriod       = 4 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		gracePeriod       = 5 * Spring.GetModOptions().raptor_graceperiodmult * 60,
 		queenTime      	  = 35 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 40 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 120 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 40 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 120 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 40 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 3,
-		angerBonus        = 1.8,
+		angerBonus        = 0.30,
 		maxXP			  = 2.5,
 		spawnChance       = 0.5,
 		damageMod         = 1.2,
@@ -383,13 +386,13 @@ local optionValues = {
 		queenResistanceMult   = 1.67,
 	},
 	[difficulties.epic] = {
-		gracePeriod       = 3 * Spring.GetModOptions().raptor_graceperiodmult * 60,
+		gracePeriod       = 4 * Spring.GetModOptions().raptor_graceperiodmult * 60,
 		queenTime      	  = 30 * Spring.GetModOptions().raptor_queentimemult * 60, -- time at which the queen appears, frames
 		raptorSpawnRate   = 30 * Spring.GetModOptions().raptor_spawntimemult,
-		burrowSpawnRate   = 90 / Spring.GetModOptions().raptor_spawncountmult,
-		turretSpawnRate   = 20 / Spring.GetModOptions().raptor_spawncountmult,
+		burrowSpawnRate   = 90 * Spring.GetModOptions().raptor_spawntimemult,
+		turretSpawnRate   = 20 * Spring.GetModOptions().raptor_spawntimemult,
 		queenSpawnMult    = 3,
-		angerBonus        = 2,
+		angerBonus        = 0.35,
 		maxXP			  = 3,
 		spawnChance       = 0.6,
 		damageMod         = 1.4,
@@ -426,9 +429,10 @@ local optionValues = {
 -------------------------------------------------------------------------------
 
 local squadSpawnOptionsTable = {
-	basic = {}, -- 67% spawn chance
-	special = {}, -- 33% spawn chance, there's 1% chance of Special squad spawning Super squad, which is specials but 30% anger earlier.
-	air = {}, -- Air waves
+	basic = {},
+	special = {},
+	basicAir = {},
+	specialAir = {},
 	healer = {}, -- Healers/Medics
 }
 
@@ -572,21 +576,34 @@ local raptorMinions = { -- Units spawning other units
 -- Basic Swarmer
 
 addNewSquad({ type = "basic", minAnger = 0, units = { "4 raptor1_mini" }, weight = 10, maxAnger = 30 })
+addNewSquad({ type = "basic", minAnger = 10, units = { "8 raptor1_mini" }, maxAnger = 40 })
+addNewSquad({ type = "basic", minAnger = 20, units = { "16 raptor1_mini" }, maxAnger = 50 })
+addNewSquad({ type = "basic", minAnger = 30, units = { "32 raptor1_mini" }, maxAnger = 60 })
 
 addNewSquad({ type = "basic", minAnger = 5, units = { "4 raptor1" }, maxAnger = 50 })
 addNewSquad({ type = "basic", minAnger = 5, units = { "4 raptor1b" }, maxAnger = 50 })
 addNewSquad({ type = "basic", minAnger = 5, units = { "4 raptor1c" }, maxAnger = 50 })
 addNewSquad({ type = "basic", minAnger = 5, units = { "4 raptor1d" }, maxAnger = 50 })
 
-addNewSquad({ type = "basic", minAnger = 15, units = { "4 raptor1", "4 raptor1b" }, maxAnger = 60 })
-addNewSquad({ type = "basic", minAnger = 15, units = { "4 raptor1b", "4 raptor1c" }, maxAnger = 60 })
-addNewSquad({ type = "basic", minAnger = 15, units = { "4 raptor1c", "4 raptor1d" }, maxAnger = 60 })
-addNewSquad({ type = "basic", minAnger = 15, units = { "4 raptor1d", "4 raptor1" }, maxAnger = 60 })
+addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1", "4 raptor1b" }, maxAnger = 70 })
+addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1b", "4 raptor1c" }, maxAnger = 70 })
+addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1c", "4 raptor1d" }, maxAnger = 70 })
+addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1d", "4 raptor1" }, maxAnger = 70 })
 
-addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1", "4 raptor1b", "4 raptor1c" }, maxAnger = 70 })
-addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1b", "4 raptor1c", "4 raptor1d" }, maxAnger = 70 })
-addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1c", "4 raptor1d", "4 raptor1" }, maxAnger = 70 })
-addNewSquad({ type = "basic", minAnger = 25, units = { "4 raptor1d", "4 raptor1", "4 raptor1b" }, maxAnger = 70 })
+addNewSquad({ type = "basic", minAnger = 45, units = { "4 raptor1", "4 raptor1b", "4 raptor1c" }, maxAnger = 90 })
+addNewSquad({ type = "basic", minAnger = 45, units = { "4 raptor1b", "4 raptor1c", "4 raptor1d" }, maxAnger = 90 })
+addNewSquad({ type = "basic", minAnger = 45, units = { "4 raptor1c", "4 raptor1d", "4 raptor1" }, maxAnger = 90 })
+addNewSquad({ type = "basic", minAnger = 45, units = { "4 raptor1d", "4 raptor1", "4 raptor1b" }, maxAnger = 90 })
+
+addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1", "4 raptor1b", "4 raptor1c", "4 raptor1d" }, maxAnger = 125 })
+addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1b", "4 raptor1c", "4 raptor1d", "4 raptor1" }, maxAnger = 125 })
+addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1c", "4 raptor1d", "4 raptor1", "4 raptor1b" }, maxAnger = 125 })
+addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1d", "4 raptor1", "4 raptor1b", "4 raptor1c" }, maxAnger = 125 })
+
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1", "8 raptor1b", "8 raptor1c", "8 raptor1d" }, maxAnger = 1000 })
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1b", "8 raptor1c", "8 raptor1d", "8 raptor1" }, maxAnger = 1000 })
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1c", "8 raptor1d", "8 raptor1", "8 raptor1b" }, maxAnger = 1000 })
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1d", "8 raptor1", "8 raptor1b", "8 raptor1c" }, maxAnger = 1000 })
 
 -- Better Swarmer
 
@@ -601,6 +618,10 @@ addNewSquad({ type = "basic", minAnger = 45, units = { "4 raptor1z", "4 raptor1x
 addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1x", "4 raptor1y", "4 raptor1z" }, maxAnger = 125 })
 addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1y", "4 raptor1z", "4 raptor1x" }, maxAnger = 125 })
 addNewSquad({ type = "basic", minAnger = 65, units = { "4 raptor1z", "4 raptor1x", "4 raptor1y" }, maxAnger = 125 })
+
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1x", "8 raptor1y", "8 raptor1z" }, maxAnger = 1000 })
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1y", "8 raptor1z", "8 raptor1x" }, maxAnger = 1000 })
+addNewSquad({ type = "basic", minAnger = 85, units = { "8 raptor1z", "8 raptor1x", "8 raptor1y" }, maxAnger = 1000 })
 
 -- Apex Swarmer
 
@@ -668,7 +689,6 @@ addNewSquad({ type = "special", minAnger = 100, units = { "8 raptor2", "8 raptor
 
 --All Terrain Swarmers------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "special", minAnger = 0, units = 	{ "1 raptorc3" }, maxAnger = 20 })
 addNewSquad({ type = "special", minAnger = 20, units = 	{ "5 raptorc3" }, weight = 2, maxAnger = 60 })
 addNewSquad({ type = "special", minAnger = 50, units = 	{ "10 raptorc3" }, weight = 2, maxAnger = 90 })
 addNewSquad({ type = "special", minAnger = 80, units = 	{ "15 raptorc3" }, weight = 2, maxAnger = 1000 })
@@ -699,9 +719,9 @@ addNewSquad({ type = "special", minAnger = 0, units = 	{ "1 raptora1" }, maxAnge
 addNewSquad({ type = "special", minAnger = 0, units = 	{ "1 raptora1b" }, maxAnger = 35 })
 addNewSquad({ type = "special", minAnger = 0, units = 	{ "1 raptora1c" }, maxAnger = 35 })
 
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "6 raptora1" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "6 raptora1b" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "6 raptora1c" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1b" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1c" }, weight = 2 })
 
 
 addNewSquad({ type = "special", minAnger = 65, units = 	{ "2 raptora2" }})
@@ -714,9 +734,9 @@ addNewSquad({ type = "special", minAnger = 85, units = 	{ "5 raptora2" }, maxAng
 addNewSquad({ type = "special", minAnger = 85, units = 	{ "5 raptora2b" }, maxAnger = 1000})
 
 
-addNewSquad({ type = "special", minAnger = 50, units = 	{ "6 raptorallterraina1" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 50, units = 	{ "6 raptorallterraina1b" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 50, units = 	{ "6 raptorallterraina1c" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptorallterraina1" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptorallterraina1b" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptorallterraina1c" }, weight = 2 })
 
 
 addNewSquad({ type = "special", minAnger = 80, units = 	{ "2 raptorapexallterrainassault" } })
@@ -729,7 +749,7 @@ addNewSquad({ type = "special", minAnger = 100, units = { "5 raptorapexallterrai
 addNewSquad({ type = "special", minAnger = 100, units = { "5 raptorapexallterrainassaultb" }, maxAnger = 1000 })
 
 
-addNewSquad({ type = "special", minAnger = 50, units = 	{ "6 raptora1_spectre" } })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptora1_spectre" } })
 
 
 addNewSquad({ type = "special", minAnger = 80, units = 	{ "4 raptora2_spectre" } })
@@ -759,9 +779,9 @@ addNewSquad({ type = "special", minAnger = 70, units = { "3 raptoracidallterrain
 addNewSquad({ type = "special", minAnger = 100, units = { "5 raptoracidallterrainassault" }, maxAnger = 1000 })
 
 
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1", "3 raptora1_spectre" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1b", "3 raptora1_spectre" }, weight = 2 })
-addNewSquad({ type = "special", minAnger = 35, units = 	{ "3 raptora1c", "3 raptora1_spectre" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptora1", "3 raptora1_spectre" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptora1b", "3 raptora1_spectre" }, weight = 2 })
+addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptora1c", "3 raptora1_spectre" }, weight = 2 })
 
 addNewSquad({ type = "special", minAnger = 80, units = 	{ "1 raptora2", "2 raptora2_spectre" }})
 addNewSquad({ type = "special", minAnger = 80, units = 	{ "1 raptora2b", "2 raptora2_spectre" }})
@@ -833,7 +853,7 @@ addNewSquad({ type = "special", minAnger = 100, units = { "10 raptorp2" }, maxAn
 
 --Artillery------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "special", minAnger = 10, units = 	{ "1 raptorr1" }, maxAnger = 50})
+addNewSquad({ type = "special", minAnger = 20, units = 	{ "1 raptorr1" }, maxAnger = 50})
 
 addNewSquad({ type = "special", minAnger = 50, units = 	{ "3 raptorr1" }, weight = 3 })
 
@@ -900,8 +920,6 @@ addNewSquad({ type = "special", minAnger = 100, units = { "2 raptorbroodartyh4" 
 
 --Brood------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "special", minAnger = 0, units = 	{ "1 raptorh4" } })
-
 addNewSquad({ type = "special", minAnger = 20, units = 	{ "2 raptorh4" } })
 
 addNewSquad({ type = "special", minAnger = 40, units = 	{ "4 raptorh4" } })
@@ -935,9 +953,9 @@ addNewSquad({ type = "special", minAnger = 100, units = { "8 raptorh2" }, maxAng
 --Matriarchs------------------------------------------------------------------------------------------------------  
 
 for j = 1, #miniBosses do
-	addNewSquad({ type = "special", minAnger = 70, units = { "2 " .. miniBosses[j] }, maxAnger = 1000 })
-	addNewSquad({ type = "special", minAnger = 85, units = { "2 " .. miniBosses[j] }, maxAnger = 1000 })
-	addNewSquad({ type = "special", minAnger = 100, units = { "2 " .. miniBosses[j] }, maxAnger = 1000 })
+	addNewSquad({ type = "special", minAnger = 70, units = { "1 " .. miniBosses[j] }, maxAnger = 1000 })
+	addNewSquad({ type = "special", minAnger = 85, units = { "1 " .. miniBosses[j] }, maxAnger = 1000 })
+	addNewSquad({ type = "special", minAnger = 100, units = { "1 " .. miniBosses[j] }, maxAnger = 1000 })
 end
 
 ---------------------------------------------
@@ -947,95 +965,95 @@ end
 local airStartAnger = 0 -- needed for air waves to work correctly.
 --Scouts------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "air", minAnger = 0, units = { "10 raptorairscout1" }, maxAnger = 20 })
+addNewSquad({ type = "basicAir", minAnger = 0, units = { "3 raptorairscout1" }, maxAnger = 20, weight = 10, })
 
-addNewSquad({ type = "air", minAnger = 20, units = { "1 raptorairscout1" }, maxAnger = 40 })
+addNewSquad({ type = "basicAir", minAnger = 20, units = { "1 raptorairscout1" }, maxAnger = 40 })
 
-addNewSquad({ type = "air", minAnger = 33, units = { "1 raptorairscout2" }, maxAnger = 80 })
+addNewSquad({ type = "basicAir", minAnger = 33, units = { "1 raptorairscout2" }, maxAnger = 80 })
 
-addNewSquad({ type = "air", minAnger = 66, units = { "1 raptorairscout3" }, maxAnger = 1000 })
+addNewSquad({ type = "basicAir", minAnger = 66, units = { "1 raptorairscout3" }, maxAnger = 1000 })
 
 --Fighters------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "air", minAnger = 0, units = { "1 raptorw1_mini" }, maxAnger = 20 })
+addNewSquad({ type = "basicAir", minAnger = 0, units = { "1 raptorw1_mini" }, maxAnger = 20 })
 
-addNewSquad({ type = "air", minAnger = 20, units = { "4 raptorw1_mini" }, maxAnger = 60 })
-
-
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorw1", } })
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorw1b", } })
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorw1c", } })
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorw1d", } })
-
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorw1", } })
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorw1b", } })
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorw1c", } })
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorw1d", } })
+addNewSquad({ type = "basicAir", minAnger = 20, units = { "4 raptorw1_mini" }, maxAnger = 60 })
 
 
-addNewSquad({ type = "air", minAnger = 80, units = { "6 raptorw2" }, weight = 2 })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorw1", } })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorw1b", } })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorw1c", } })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorw1d", } })
 
-addNewSquad({ type = "air", minAnger = 100, units = { "8 raptorw2" }, weight = 2, maxAnger = 1000 })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorw1", } })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorw1b", } })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorw1c", } })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorw1d", } })
+
+
+addNewSquad({ type = "basicAir", minAnger = 80, units = { "6 raptorw2" }, weight = 2 })
+
+addNewSquad({ type = "basicAir", minAnger = 100, units = { "8 raptorw2" }, weight = 2, maxAnger = 1000 })
 
 --Bombers------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "air", minAnger = 0, units = { "1 raptorf1_mini" }, maxAnger = 20 })
+addNewSquad({ type = "basicAir", minAnger = 0, units = { "1 raptorf1_mini" }, maxAnger = 20 })
 
-addNewSquad({ type = "air", minAnger = 20, units = { "4 raptorf1_mini" }, maxAnger = 60 })
-
-
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorf1", }, weight = 2 })
-addNewSquad({ type = "air", minAnger = 40, units = { "4 raptorf1b", }, weight = 2 })
-
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorf1", }, weight = 2 })
-addNewSquad({ type = "air", minAnger = 60, units = { "4 raptorf1b", }, weight = 2 })
+addNewSquad({ type = "basicAir", minAnger = 20, units = { "4 raptorf1_mini" }, maxAnger = 60 })
 
 
-addNewSquad({ type = "air", minAnger = 80, units = { "2 raptorf1apex" } })
-addNewSquad({ type = "air", minAnger = 80, units = { "2 raptorf1apexb" } })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorf1", }, weight = 2 })
+addNewSquad({ type = "basicAir", minAnger = 40, units = { "4 raptorf1b", }, weight = 2 })
 
-addNewSquad({ type = "air", minAnger = 100, units = { "3 raptorf1apex" }, maxAnger = 1000 })
-addNewSquad({ type = "air", minAnger = 100, units = { "3 raptorf1apexb" }, maxAnger = 1000 })
-
-
-addNewSquad({ type = "air", minAnger = 50, units = { "1 raptorebomber1" } })
-
-addNewSquad({ type = "air", minAnger = 60, units = { "2 raptorebomber1" } })
-
-addNewSquad({ type = "air", minAnger = 70, units = { "4 raptorebomber1" } })
-
-addNewSquad({ type = "air", minAnger = 80, units = { "6 raptorebomber1" } })
-
-addNewSquad({ type = "air", minAnger = 90, units = { "8 raptorebomber1" }, maxAnger = 1000 })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorf1", }, weight = 2 })
+addNewSquad({ type = "basicAir", minAnger = 60, units = { "4 raptorf1b", }, weight = 2 })
 
 
-addNewSquad({ type = "air", minAnger = 50, units = { "1 raptoracidbomber" } })
+addNewSquad({ type = "basicAir", minAnger = 80, units = { "2 raptorf1apex" } })
+addNewSquad({ type = "basicAir", minAnger = 80, units = { "2 raptorf1apexb" } })
 
-addNewSquad({ type = "air", minAnger = 70, units = { "4 raptoracidbomber" } })
+addNewSquad({ type = "basicAir", minAnger = 100, units = { "3 raptorf1apex" }, maxAnger = 1000 })
+addNewSquad({ type = "basicAir", minAnger = 100, units = { "3 raptorf1apexb" }, maxAnger = 1000 })
 
-addNewSquad({ type = "air", minAnger = 90, units = { "8 raptoracidbomber" }, maxAnger = 1000 })
+
+addNewSquad({ type = "specialAir", minAnger = 50, units = { "1 raptorebomber1" } })
+
+addNewSquad({ type = "specialAir", minAnger = 60, units = { "2 raptorebomber1" } })
+
+addNewSquad({ type = "specialAir", minAnger = 70, units = { "4 raptorebomber1" } })
+
+addNewSquad({ type = "specialAir", minAnger = 80, units = { "6 raptorebomber1" } })
+
+addNewSquad({ type = "specialAir", minAnger = 90, units = { "8 raptorebomber1" }, maxAnger = 1000 })
 
 
-addNewSquad({ type = "air", minAnger = 50, units = { "1 raptorbroodbomberh4" } })
+addNewSquad({ type = "specialAir", minAnger = 50, units = { "1 raptoracidbomber" } })
 
-addNewSquad({ type = "air", minAnger = 70, units = { "1 raptorbroodbomberh3" } })
-addNewSquad({ type = "air", minAnger = 70, units = { "2 raptorbroodbomberh4" } })
+addNewSquad({ type = "specialAir", minAnger = 70, units = { "4 raptoracidbomber" } })
 
-addNewSquad({ type = "air", minAnger = 90, units = { "1 raptorbroodbomberh2" } })
-addNewSquad({ type = "air", minAnger = 90, units = { "2 raptorbroodbomberh3" } })
-addNewSquad({ type = "air", minAnger = 90, units = { "4 raptorbroodbomberh4" } })
+addNewSquad({ type = "specialAir", minAnger = 90, units = { "8 raptoracidbomber" }, maxAnger = 1000 })
 
-addNewSquad({ type = "air", minAnger = 100, units = { "4 raptorbroodbomberh4" }, maxAnger = 1000 })
-addNewSquad({ type = "air", minAnger = 100, units = { "4 raptorbroodbomberh3" }, maxAnger = 1000 })
-addNewSquad({ type = "air", minAnger = 100, units = { "4 raptorbroodbomberh2" }, maxAnger = 1000 })
+
+addNewSquad({ type = "specialAir", minAnger = 50, units = { "1 raptorbroodbomberh4" } })
+
+addNewSquad({ type = "specialAir", minAnger = 70, units = { "1 raptorbroodbomberh3" } })
+addNewSquad({ type = "specialAir", minAnger = 70, units = { "2 raptorbroodbomberh4" } })
+
+addNewSquad({ type = "specialAir", minAnger = 90, units = { "1 raptorbroodbomberh2" } })
+addNewSquad({ type = "specialAir", minAnger = 90, units = { "2 raptorbroodbomberh3" } })
+addNewSquad({ type = "specialAir", minAnger = 90, units = { "4 raptorbroodbomberh4" } })
+
+addNewSquad({ type = "specialAir", minAnger = 100, units = { "4 raptorbroodbomberh4" }, maxAnger = 1000 })
+addNewSquad({ type = "specialAir", minAnger = 100, units = { "4 raptorbroodbomberh3" }, maxAnger = 1000 })
+addNewSquad({ type = "specialAir", minAnger = 100, units = { "4 raptorbroodbomberh2" }, maxAnger = 1000 })
 
 --Kamikaze------------------------------------------------------------------------------------------------------  
 
-addNewSquad({ type = "air", minAnger = 70, units = { "10 raptor_dodoair" } })
+-- addNewSquad({ type = "specialAir", minAnger = 70, units = { "10 raptor_dodoair" } })
 
-addNewSquad({ type = "air", minAnger = 90, units = { "10 raptor_dodoair" } })
+-- addNewSquad({ type = "specialAir", minAnger = 90, units = { "10 raptor_dodoair" } })
 
-addNewSquad({ type = "air", minAnger = 100, units = { "10 raptor_dodoair" }, maxAnger = 1000 })
+-- addNewSquad({ type = "specialAir", minAnger = 100, units = { "10 raptor_dodoair" }, maxAnger = 1000 })
 
 ------------------------------------------------
 -- Healer --------------------------------------
@@ -1053,7 +1071,16 @@ addNewSquad({ type = "healer", minAnger = 50, units = { "1 raptorhealer3" }, max
 addNewSquad({ type = "healer", minAnger = 75, units = { "8 raptorhealer1" }, maxAnger = 100 })
 addNewSquad({ type = "healer", minAnger = 75, units = { "4 raptorhealer2" }, maxAnger = 200 })
 addNewSquad({ type = "healer", minAnger = 75, units = { "2 raptorhealer3" }, maxAnger = 300 })
-addNewSquad({ type = "healer", minAnger = 75, units = { "1 raptorhealer4" }, maxAnger = 1000 })
+addNewSquad({ type = "healer", minAnger = 75, units = { "1 raptorhealer4" }, maxAnger = 400 })
+
+addNewSquad({ type = "healer", minAnger = 100, units = { "8 raptorhealer2" }, maxAnger = 300 })
+addNewSquad({ type = "healer", minAnger = 100, units = { "4 raptorhealer3" }, maxAnger = 400 })
+addNewSquad({ type = "healer", minAnger = 100, units = { "2 raptorhealer4" }, maxAnger = 500 })
+
+addNewSquad({ type = "healer", minAnger = 125, units = { "8 raptorhealer3" }, maxAnger = 500 })
+addNewSquad({ type = "healer", minAnger = 125, units = { "4 raptorhealer4" }, maxAnger = 600 })
+
+addNewSquad({ type = "healer", minAnger = 150, units = { "8 raptorhealer4" }, maxAnger = 1000 })
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Settings -- Adjust these
@@ -1062,7 +1089,7 @@ local useScum = true -- Use scum as space where turrets can spawn (requires scum
 local useWaveMsg = true -- Show dropdown message whenever new wave is spawning
 local spawnSquare = 90 -- size of the raptor spawn square centered on the burrow
 local spawnSquareIncrement = 2 -- square size increase for each unit spawned
-local burrowSize = 80
+local burrowSize = 144
 local bossFightWaveSizeScale = 10 -- Percentage
 local defaultRaptorFirestate = 3 -- 0 - Hold Fire | 1 - Return Fire | 2 - Fire at Will | 3 - Fire at everything
 

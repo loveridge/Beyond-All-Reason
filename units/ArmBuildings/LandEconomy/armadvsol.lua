@@ -7,7 +7,7 @@ return {
 		buildcostenergy = 5000,
 		buildcostmetal = 370,
 		buildpic = "ARMADVSOL.DDS",
-		buildtime = 7945,
+		buildtime = 7950,
 		canrepeat = false,
 		category = "ALL NOTSUB NOWEAPON NOTAIR NOTHOVER SURFACE EMPABLE",
 		collisionvolumeoffsets = "0 0 0",
@@ -31,7 +31,7 @@ return {
 		seismicsignature = 0,
 		selfdestructas = "smallBuildingExplosionGenericSelfd",
 		sightdistance = 260,
-		yardmap = "oooo oooo yooy yooy",
+		yardmap = "oooo oooo oooo oooo",
 		customparams = {
 			usebuildinggrounddecal = true,
 			buildinggrounddecaltype = "decals/armadvsol_aoplane.dds",

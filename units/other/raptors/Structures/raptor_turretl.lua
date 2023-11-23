@@ -97,7 +97,7 @@ return {
 				noselfdamage = true,
 				proximitypriority = -4,
 				range = 2000,
-				reloadtime = 20,
+				reloadtime = 40,
 				rgbcolor = "1 0.5 0.1",
 				size = 5.5,
 				sizedecay = 0.09,
@@ -106,6 +106,7 @@ return {
 				sprayangle = 2048,
 				tolerance = 5000,
 				turret = true,
+				weapontype = "Cannon",
 				weapontimer = 0.2,
 				weaponvelocity = 520,
 				damage = {

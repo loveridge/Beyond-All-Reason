@@ -96,7 +96,7 @@ return {
 				name = "GOOLAUNCHER",
 				noselfdamage = true,
 				proximitypriority = -4,
-				range = 1500,
+				range = 750,
 				reloadtime = 20,
 				rgbcolor = "1 0.5 0.1",
 				size = 5.5,
@@ -106,6 +106,7 @@ return {
 				sprayangle = 1024,
 				tolerance = 5000,
 				turret = true,
+				weapontype = "Cannon",
 				weapontimer = 0.2,
 				weaponvelocity = 520,
 				damage = {
