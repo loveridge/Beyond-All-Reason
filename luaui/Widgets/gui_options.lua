@@ -11,6 +11,8 @@ function widget:GetInfo()
 	}
 end
 
+Spring.SendCommands("resbar 0")
+
 -- Add new options at: function init
 
 local types = {
@@ -2077,6 +2079,11 @@ function init()
 		end
 	end
 
+	local oldValues = {}
+	for _, option in ipairs(options) do
+		oldValues[option.id] = option.value
+	end
+
 	options = {
 		--GFX
 		{ id = "preset", group = "gfx", category = types.basic, name = Spring.I18N('ui.settings.option.preset'), type = "select", options = presetNames, value = presetCodes[Spring.GetConfigString('graphicsPreset')],
@@ -2275,14 +2282,15 @@ function init()
 		  end,
 		},
 
-		{ id = "grounddetail", group = "gfx", category = types.dev, name = Spring.I18N('ui.settings.option.grounddetail'), type = "slider", min = 50, max = 200, step = 1, value = tonumber(Spring.GetConfigInt("GroundDetail", 150) or 150), description = Spring.I18N('ui.settings.option.grounddetail_descr'),
-		  onload = function(i)
-		  end,
-		  onchange = function(i, value)
-			  Spring.SetConfigInt("GroundDetail", value)
-			  Spring.SendCommands("GroundDetail " .. value)
-		  end,
-		},
+		-- luaintro sets grounddetail to 200 every launch anyway
+		--{ id = "grounddetail", group = "gfx", category = types.dev, name = Spring.I18N('ui.settings.option.grounddetail'), type = "slider", min = 50, max = 200, step = 1, value = tonumber(Spring.GetConfigInt("GroundDetail", 150) or 150), description = Spring.I18N('ui.settings.option.grounddetail_descr'),
+		--  onload = function(i)
+		--  end,
+		--  onchange = function(i, value)
+		--	  Spring.SetConfigInt("GroundDetail", value)
+		--	  Spring.SendCommands("GroundDetail " .. value)
+		--  end,
+		--},
 
 		{ id = "cusgl4", group = "gfx", name = Spring.I18N('ui.settings.option.cus'), category = types.advanced, type = "bool", value = (Spring.GetConfigInt("cus2", 1) == 1), description = Spring.I18N('ui.settings.option.cus_descr'),
 		  onchange = function(i, value)
@@ -2590,12 +2598,6 @@ function init()
 		{ id = "label_gfx_game", group = "gfx", name = Spring.I18N('ui.settings.option.label_game'), category = types.advanced },
 		{ id = "label_gfx_game_spacer", group = "gfx", category = types.basic },
 		{ id = "resurrectionhalos", group = "gfx", category = types.advanced, widget = "Resurrection Halos GL4", name = Spring.I18N('ui.settings.option.resurrectionhalos'), type = "bool", value = GetWidgetToggleValue("Resurrection Halos GL4"), description = Spring.I18N('ui.settings.option.resurrectionhalos_descr') },
-
-		--{ id = "xmas", group = "gfx", name = Spring.I18N('ui.settings.option.xmas'), category = types.basic, type = "bool", value = (Spring.GetConfigFloat("decorationsize", 1) == 1), description = Spring.I18N('ui.settings.option.xmas_descr'),
-		--  onchange = function(i, value)
-		--	  Spring.SetConfigFloat("decorationsize", (value and 1 or 0))
-		--  end,
-		--},
 
 
 		-- SOUND
@@ -2907,6 +2909,7 @@ function init()
 				  widgetHandler:DisableWidget('Grid menu')
 				  widgetHandler:EnableWidget('Build menu')
 			  end
+			  init()
 		  end,
 		},
 		{ id = "gridmenu_alwaysreturn", group = "control", category = types.advanced, name = Spring.I18N('ui.settings.option.gridmenu_alwaysreturn'), type = "bool", value = (WG['gridmenu'] ~= nil and WG['gridmenu'].getAlwaysReturn ~= nil and WG['gridmenu'].getAlwaysReturn()), description = Spring.I18N('ui.settings.option.gridmenu_alwaysreturn_descr'),
@@ -2914,6 +2917,13 @@ function init()
 		  end,
 		  onchange = function(_, value)
 			  saveOptionValue('Grid menu', 'gridmenu', 'setAlwaysReturn', { 'alwaysReturn' }, value)
+		  end,
+		},
+		{ id = "gridmenu_autoselectfirst", group = "control", category = types.advanced, name = Spring.I18N('ui.settings.option.gridmenu_autoselectfirst'), type = "bool", value = (WG['gridmenu'] ~= nil and WG['gridmenu'].getAutoSelectFirst ~= nil and WG['gridmenu'].getAutoSelectFirst()), description = Spring.I18N('ui.settings.option.gridmenu_autoselectfirst_descr'),
+		  onload = function()
+		  end,
+		  onchange = function(_, value)
+			  saveOptionValue('Grid menu', 'gridmenu', 'setAutoSelectFirst', { 'autoSelectFirst' }, value)
 		  end,
 		},
 
@@ -3080,7 +3090,7 @@ function init()
 			  Spring.SetConfigFloat("MiddleClickScrollSpeed", value)
 		  end,
 		},
-		{ id = "cameramovespeed", group = "control", category = types.basic, name = widgetOptionColor .. "   " .. Spring.I18N('ui.settings.option.cameramovespeed'), type = "slider", min = 0, max = 50, step = 1, value = Spring.GetConfigInt("CamSpringScrollSpeed", 10), description = Spring.I18N('ui.settings.option.cameramovespeed_descr'),
+		{ id = "cameramovespeed", group = "control", category = types.basic, name = widgetOptionColor .. "   " .. Spring.I18N('ui.settings.option.cameramovespeed'), type = "slider", min = 0, max = 100, step = 1, value = Spring.GetConfigInt("CamSpringScrollSpeed", 10), description = Spring.I18N('ui.settings.option.cameramovespeed_descr'),
 		  onload = function(i)
 		  end,
 		  onchange = function(i, value)
@@ -4003,7 +4013,7 @@ function init()
 		  end,
 		},
 
-		{ id = "attackrange", group = "ui", category = types.basic, widget = "Attack Range GL4", name = Spring.I18N('ui.settings.option.attackrange'), type = "bool", value = GetWidgetToggleValue("Defense Range"), description = Spring.I18N('ui.settings.option.attackrange_descr') },
+		{ id = "attackrange", group = "ui", category = types.basic, widget = "Attack Range GL4", name = Spring.I18N('ui.settings.option.attackrange'), type = "bool", value = GetWidgetToggleValue("Attack Range GL4"), description = Spring.I18N('ui.settings.option.attackrange_descr') },
 		{ id = "attackrange_shiftonly", category = types.dev, group = "ui", name = widgetOptionColor .. "   " .. Spring.I18N('ui.settings.option.attackrange_shiftonly'), type = "bool", value = (WG['attackrange'] ~= nil and WG['attackrange'].getShiftOnly ~= nil and WG['attackrange'].getShiftOnly()), description = Spring.I18N('ui.settings.option.attackrange_shiftonly_descr'),
 		  onload = function(i)
 			loadWidgetData("Attack Range GL4", "attackrange_shiftonly", { 'shift_only' })
@@ -4012,7 +4022,7 @@ function init()
 			saveOptionValue('Attack Range GL4', 'attackrange', 'setShiftOnly', { 'shift_only' }, value)
 		  end,
 		},
-		{ id = "attackrange_cursorunitrange", category = types.dev, group = "ui", name = widgetOptionColor .. "   " .. Spring.I18N('ui.settings.option.attackrange_cursorunitrange'), type = "bool", value = (WG['attackrange'] ~= nil and WG['attackrange'].setCursorUnitRange ~= nil and WG['attackrange'].setCursorUnitRange()), description = Spring.I18N('ui.settings.option.attackrange_cursorunitrange_descr'),
+		{ id = "attackrange_cursorunitrange", category = types.dev, group = "ui", name = widgetOptionColor .. "   " .. Spring.I18N('ui.settings.option.attackrange_cursorunitrange'), type = "bool", value = (WG['attackrange'] ~= nil and WG['attackrange'].getCursorUnitRange ~= nil and WG['attackrange'].getCursorUnitRange()), description = Spring.I18N('ui.settings.option.attackrange_cursorunitrange_descr'),
 		  onload = function(i)
 			  loadWidgetData("Attack Range GL4", "attackrange_cursorunitrange", { 'cursor_unit_range' })
 		  end,
@@ -4474,12 +4484,7 @@ function init()
 		{ id = "language", group = "dev", category = types.dev, name = Spring.I18N('ui.settings.option.language'), type = "select", options = languageNames, value = languageCodes[Spring.I18N.getLocale()],
 			onchange = function(i, value)
 				local language = languageCodes[value]
-				Spring.SetConfigString('language', language)
-				Spring.I18N.setLanguage(language)
-
-				if Script.LuaUI('LanguageChanged') then
-					Script.LuaUI.LanguageChanged()
-				end
+				WG['language'].setLanguage(language)
 			end
 		},
 		{ id = "font", group = "dev", category = types.dev, name = Spring.I18N('ui.settings.option.font'), type = "select", options = {}, value = 1, description = Spring.I18N('ui.settings.option.font_descr'),
@@ -5448,10 +5453,6 @@ function init()
 		--planeColor = {number r, number g, number b},
 	}
 
-	--if os.date("%m") ~= "12"  or  os.date("%d") < "12" then
-	--	options[getOptionByID('xmas')] = nil
-	--end
-
 	if not isPotatoGpu and gpuMem <= 4500 then
 		options[getOptionByID('advmapshading')].category = types.basic
 	end
@@ -5486,6 +5487,7 @@ function init()
 
 	if not GetWidgetToggleValue('Grid menu') then
 		options[getOptionByID('gridmenu_alwaysreturn')] = nil
+		options[getOptionByID('gridmenu_autoselectfirst')] = nil
 	end
 
 
@@ -5522,15 +5524,6 @@ function init()
 		options[getOptionByID('font2')].value = getSelectKey(getOptionByID('font2'), string.sub(fname, 1, string.len(fname) - 4))
 	end
 
-	-- set sun minimal height
-	if getOptionByID('cus') then
-		if options[getOptionByID('cus')].value then
-			if WG.disabledCus ~= nil and WG.disabledCus then
-				options[getOptionByID('cus')].value = 0.5
-			end
-		end
-	end
-
 	-- check if cus is disabled by auto disable cus widget (in case options widget has been reloaded)
 	if getOptionByID('sun_y') then
 		if select(2, gl.GetSun("pos")) < options[getOptionByID('sun_y')].min then
@@ -5557,12 +5550,6 @@ function init()
 
 		-- set vsync
 		Spring.SetConfigInt("VSync", Spring.GetConfigInt("VSyncGame", -1))
-
-		-- disable old cus
-		if Spring.GetConfigInt("cus", 0) == 1 then
-			Spring.SetConfigInt("cus", 0)
-			Spring.SendCommands("luarules disablecus")
-		end
 	end
 	if not waterDetected then
 		Spring.SendCommands("water 0")
@@ -5589,10 +5576,15 @@ function init()
 		--	options[id].onchange(id, options[id].value)
 		--end
 
+		-- disable engine decals (footprints)
+		options[getOptionByID('decals')] = nil
+		if Spring.GetConfigInt("GroundDecals", 3) > 0 then
+			Spring.SendCommands("GroundDecals 0")
+			Spring.SetConfigInt("GroundDecals", 0)
+		end
+
 		if isPotatoGpu then
-			Spring.SendCommands("luarules disablecus")
 			Spring.SendCommands("luarules disablecusgl4")
-			options[getOptionByID('cus')] = nil
 			options[getOptionByID('cusgl4')] = nil
 
 			-- limit available msaa levels to 'off' and 'x2'
@@ -5650,7 +5642,7 @@ function init()
 		end
 
 	elseif gpuMem >= 3000 then
-		if (Spring.GetConfigInt("cus2", 1) ~= 1) then
+		if Spring.GetConfigInt("cus2", 1) ~= 1 then
 			local id = getOptionByID('cusgl4')
 			options[id].onchange(id, 1)
 		end
@@ -5945,6 +5937,9 @@ function init()
 			if userwidgetOptions[name] then
 				for k, customOption in pairs(userwidgetOptions[name]) do
 					options[#options+1] = table.copy(customOptions[customOption])
+					if oldValues[options[#options].id] ~= nil then
+						options[#options].value = oldValues[options[#options].id]
+					end
 					options[#options].name = widgetOptionColor..'  '..options[#options].name
 					usedCustomOptions[customOption] = true
 				end
@@ -6270,19 +6265,31 @@ function widget:Initialize()
 			return false
 		end
 	end
-	WG['options'].addOption = function(option)
-		option.group = "custom"
-		customOptions[#customOptions+1] = option
+	WG['options'].addOptions = function(newOptions)
+		for _, option in ipairs(newOptions) do
+			option.group = "custom"
+			customOptions[#customOptions+1] = option
+		end
+
 		init()
 	end
-	WG['options'].removeOption = function(name)
-		for i,option in pairs(customOptions) do
-			if option.id == name then
-				customOptions[i] = nil
-				init()
-				break
+	WG['options'].removeOptions = function(names)
+		for _, name in ipairs(names) do
+			for i, option in pairs(customOptions) do
+				if option.id == name then
+					customOptions[i] = nil
+					break
+				end
 			end
 		end
+
+		init()
+	end
+	WG['options'].addOption = function(option)
+		return WG['options'].addOptions({ option })
+	end
+	WG['options'].removeOption = function(name)
+		return WG['options'].removeOptions({ name })
 	end
 end
 
