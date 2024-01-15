@@ -1,0 +1,14 @@
+body {
+    top: 100px;
+    /* width: 1000dp;
+    height: 400dp; */
+    /* background-color: red; */
+    width: 40%;
+    margin: auto;
+    font-family: Exo 2;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.5em;
+    color: white;
+    cursor: cursor_default;
+}
