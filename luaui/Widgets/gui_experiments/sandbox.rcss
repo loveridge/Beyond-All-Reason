@@ -1,14 +1,13 @@
 body {
-    top: 100px;
-    /* width: 1000dp;
-    height: 400dp; */
-    /* background-color: red; */
-    width: 40%;
-    margin: auto;
+    top: 10dp;
+    left: 20%;
+    width: 200dp;
+    height: 200dp;
     font-family: Exo 2;
     font-weight: normal;
     font-style: normal;
     font-size: 1.5em;
     color: white;
-    cursor: cursor_default;
+    cursor: ManualFire;
+    decorator: image("/luaui/images/backgroundtile.png");
 }

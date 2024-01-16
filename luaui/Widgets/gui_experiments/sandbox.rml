@@ -1,7 +1,7 @@
 <rml>
     <head>
         <title>sandbox</title>
-        <link type="text/rcss" href="../../rml/rml.rcss" />
+        <link type="text/rcss" href="/LuaUI/rml/rml.rcss" />
         <link type="text/rcss" href="sandbox.rcss" />
     </head>
     <body>

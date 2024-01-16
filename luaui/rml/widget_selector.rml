@@ -1,3 +1,4 @@
+
 <rml>
 
 	<head>
@@ -11,6 +12,7 @@
 
 				margin: auto;
 				font-family: Exo 2;
+				cursor: cursornormal;
 			}
 
 			div {

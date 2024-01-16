@@ -11,7 +11,7 @@
 	<body class="draggable">
 		<div id="title_bar">
 			<handle move_target="#document">
-				<div id="icon"></div>
+				<div id="icon"/>
 				<span id="title">Title</span>
 			</handle>
 		</div>
@@ -21,6 +21,6 @@
 			</div>
 		</div>
 		<handle size_target="#document"
-			style="position: absolute; width: 16dp; height: 600dp; bottom: 0px; right: 0px; cursor: resize;"></handle>
+				style="position: absolute; width: 16dp; height: 600dp; bottom: 0px; right: 0px; cursor: resize;"/>
 	</body>
 </template>
