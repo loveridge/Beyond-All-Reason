@@ -13,6 +13,15 @@ end
 local function cameraFlipHandler()
 	local camState = Spring.GetCameraState()
 	--Spring.Echo(camState.mode)
+	if camState.mode == 2 then
+		if camState.ry > 0 then
+			camState.ry = camState.ry - math.pi - 1 / 3
+		else
+			camState.ry = camState.ry + math.pi + 1 / 3
+		end
+		Spring.SetCameraState(camState, 0)
+		return
+	end
 	if camState.mode ~= 1 and camState.mode ~= 5 then return end --do nothing unless overhead cam or smooth cam
 	--Spring.Echo(camState.flipped)
 	if camState.flipped then
