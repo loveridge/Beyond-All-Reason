@@ -73,13 +73,36 @@ function widget:filterList(ev, elm)
 end
 
 function widget:Initialize()
-	getWidgets()
-	context = rmlui.GetContext("overlay")
+	--getWidgets()
+	context = RmlUi.GetContext("overlay")
 
 	dm = context:OpenDataModel("widgetlist", dataModel)
 
 	document = context:LoadDocument("luaui/rml/widget_selector.rml", widget)
 	document:Show()
+end
+
+function widget:GameFrame(f)
+	local EzSVG = VFS.Include('LuaUI/Widgets/ezsvg.lua')
+	Spring.Echo("gothere")
+	local width = 350
+	svg = EzSVG.Document(width, 370, EzSVG.gray(50))
+
+	lines = EzSVG.Group()
+
+	EzSVG.setStyle("stroke", "white")
+	EzSVG.setStyle("stroke-linecap", "round")
+
+	for x = 0, width, width / 80 do
+		EzSVG.setStyle("stroke-width", x / 150)
+		lines:add(EzSVG.Line(x, 0, x, math.abs(math.sin(((f) + x) / 30) * 250)))
+	end
+
+	EzSVG.clearStyle()
+
+	svg:add(lines)
+
+	document:GetElementById("svgtest"):SetAttribute("src", svg:tostr())
 end
 
 function widget:Shutdown()
@@ -96,7 +119,7 @@ function widget:buttonPress(str)
 end
 
 function widget:handleKey(event, elm)
-	if rmlui.key_identifier.ESCAPE == event.parameters.key_identifier then
+	if RmlUi.key_identifier.ESCAPE == event.parameters.key_identifier then
 		local inputText = elm:GetAttribute("value")
 		if inputText == "" then
 			elm:Blur()

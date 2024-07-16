@@ -46,7 +46,7 @@ local mmSlider
 local blades
 function widget:Initialize()
 	checkSelfStatus()
-	context = rmlui.GetContext("overlay")
+	context = RmlUi.GetContext("overlay")
 
 	dataModel.resources = {
 		energy = {

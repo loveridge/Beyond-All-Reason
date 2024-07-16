@@ -107,6 +107,9 @@
 		 <button onclick="buttonPress('test')">2</button>
 		 <button onclick="Spring.Echo('test')">3</button>-->
 			<button onclick="OnWindowLoad(document, 'test')">4</button>
+			<img src="/unitpics/armcom.dds" width="200" height="200" style="border:5px red" />
+			<img src="/luaui/images/metal.png" width="200" height="200" style="border:5px red" />
+			<svg id="svgtest"></svg>
 		</div>
 	</body>
 </rml>

@@ -5,17 +5,17 @@
 --  Copyright (C) 2023.
 --  Licensed under the terms of the GNU GPL, v2 or later.
 
-if (RmlGuard or not rmlui) then
+if (RmlGuard or not RmlUi) then
 	return
 end
 RmlGuard = true
 
-rmlui.CreateContext("overlay")
+RmlUi.CreateContext("overlay")
 
-rmlui.LoadFontFace("fonts/Poppins-Regular.otf", true)
-rmlui.LoadFontFace("fonts/Exo2-SemiBold.otf", true)
-rmlui.LoadFontFace("fonts/SourceHanSans-Regular.ttc", true)
+RmlUi.LoadFontFace("fonts/Poppins-Regular.otf", true)
+RmlUi.LoadFontFace("fonts/Exo2-SemiBold.otf", true)
+RmlUi.LoadFontFace("fonts/SourceHanSans-Regular.ttc", true)
 
-rmlui.LoadFontFace("fonts/monospaced/SourceCodePro-Medium.otf")
+RmlUi.LoadFontFace("fonts/monospaced/SourceCodePro-Medium.otf")
 
-rmlui.AddTranslationString("%%topbar.pullTooltip", "outputtext")
+RmlUi.AddTranslationString("%%topbar.pullTooltip", "outputtext")
