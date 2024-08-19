@@ -167,15 +167,15 @@ local lookKnots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
 local segments = 20
 local relativeMode = 1
 local cameraMode = 2
-local cameraLookMode = 2
+local cameraLookMode = 3
 local lookUnitID = 21640
 Spring.SetDollyCameraMode(cameraMode)
 Spring.SetDollyCameraRelativeMode(relativeMode)
 local points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 local lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
 Spring.SetDollyCameraCurve(3, curveControlPoints, nurbsKnots)
--- Spring.SetDollyCameraLookCurve(3, lookCPoints, lookKnots)
-Spring.SetDollyCameraLookUnit(21640)
+Spring.SetDollyCameraLookCurve(3, lookCPoints, lookKnots)
+-- Spring.SetDollyCameraLookUnit(21640)
 -- Spring.SetDollyCameraPosition(200, 200, 200)
 -- Spring.SetDollyCameraLookPosition(200,400,200)
 -- Spring.Debug.TableEcho(points)
@@ -368,12 +368,22 @@ end
 
 local draw = true
 local fadeFromBlack = false
+local paused = false
 function widget:KeyPress(key, modifier, isRepeat)
+	Spring.Echo(key)
 	if key == 111 then
 		draw = not draw
 		if not draw then
 			Spring.RunDollyCamera(10000)
 		end
+	end
+	if key == 112 then
+		if paused then
+			Spring.ResumeDollyCamera()
+		else
+			Spring.PauseDollyCamera()
+		end
+		paused = not paused
 	end
 	if not draw then
 		fadeFromBlack = true
@@ -383,16 +393,19 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 local lastPathPos = { 0, 0, 0 }
-local startDrag = {0,0}
+local startDrag = { 0, 0 }
 local heightDrag = false
+local lookHit = false
+local hitPoints
 function widget:MousePress(x, y, button)
 	if button == 2 or not draw then
 		return
 	end
 	local mx, my = Spring.GetMouseState()
 	for i = 2, #curveControlPoints, 4 do
-		local sx, sy = Spring.WorldToScreenCoords(curveControlPoints[i-1],curveControlPoints[i],curveControlPoints[i+1])
-		Spring.Echo(mx,my,sx,sy )
+		local sx, sy = Spring.WorldToScreenCoords(curveControlPoints[i - 1], curveControlPoints[i],
+			curveControlPoints[i + 1])
+		Spring.Echo(mx, my, sx, sy)
 		-- if abs(sx - mx) < cpRad and abs(sy - my) < cpRad then
 		local _, pos = Spring.TraceScreenRay(mx, my, true, false, true, false, curveControlPoints[i])
 		if not pos then return end
@@ -400,14 +413,37 @@ function widget:MousePress(x, y, button)
 		if abs(curveControlPoints[i - 1] - pos[4]) < cpRad and abs(curveControlPoints[i] - pos[5]) < cpRad and abs(curveControlPoints[i + 1] - pos[6]) < cpRad then
 			Spring.Echo("hit", curveControlPoints[i - 1], curveControlPoints[i], curveControlPoints[i + 1])
 			hitindex = i - 1
-			-- lastPathPos[1] = curveControlPoints[i - 1]
-			-- lastPathPos[2] = curveControlPoints[i ]
-			-- lastPathPos[3] = curveControlPoints[i + 1]
+			lastPathPos[1] = curveControlPoints[i - 1]
+			lastPathPos[2] = curveControlPoints[i]
+			lastPathPos[3] = curveControlPoints[i + 1]
 			startDrag[1] = mx
-			startDrag[2]= my
-			lastPathPos[1] = pos[4]
-			lastPathPos[2] = pos[5]
-			lastPathPos[3] = pos[6]
+			startDrag[2] = my
+			-- lastPathPos[1] = pos[4]
+			-- lastPathPos[2] = pos[5]
+			-- lastPathPos[3] = pos[6]
+			hitPoints = curveControlPoints
+		end
+	end
+	for i = 2, #lookCPoints, 4 do
+		local sx, sy = Spring.WorldToScreenCoords(lookCPoints[i - 1], lookCPoints[i], lookCPoints[i + 1])
+		Spring.Echo(mx, my, sx, sy)
+		-- if abs(sx - mx) < cpRad and abs(sy - my) < cpRad then
+		local _, pos = Spring.TraceScreenRay(mx, my, true, false, true, false, lookCPoints[i])
+		if not pos then return end
+		-- Spring.Echo(curveControlPoints[i - 1], curveControlPoints[i], curveControlPoints[i + 1], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
+		if abs(lookCPoints[i - 1] - pos[4]) < cpRad and abs(lookCPoints[i] - pos[5]) < cpRad and abs(lookCPoints[i + 1] - pos[6]) < cpRad then
+			Spring.Echo("hit", curveControlPoints[i - 1], curveControlPoints[i], curveControlPoints[i + 1])
+			hitindex = i - 1
+			lastPathPos[1] = lookCPoints[i - 1]
+			lastPathPos[2] = lookCPoints[i]
+			lastPathPos[3] = lookCPoints[i + 1]
+			startDrag[1] = mx
+			startDrag[2] = my
+			lookHit = true
+			hitPoints = lookCPoints
+			-- lastPathPos[1] = pos[4]
+			-- lastPathPos[2] = pos[5]
+			-- lastPathPos[3] = pos[6]
 		end
 	end
 	if hitindex < 0 then
@@ -429,20 +465,24 @@ function widget:MouseMove(mx, my, dx, dy, mButton)
 	if ctrl then heightDrag = true else heightDrag = false end
 	local _, pos = Spring.TraceScreenRay(mx, my, true, false, true, false, lastPathPos[2])
 	if not pos then return end
-	local mapy = Spring.GetGroundHeight(curveControlPoints[hitindex], curveControlPoints[hitindex + 2])
+	local mapy = Spring.GetGroundHeight(hitPoints[hitindex], hitPoints[hitindex + 2])
 	local dx, dz = pos[4] - lastPathPos[1], pos[6] - lastPathPos[3]
 	-- dx = mx - startDrag[1]
 	-- dz = startDrag[2] - my
 	-- Spring.Echo("moving", dx, dz, dx, dy)
 	if heightDrag then
-		curveControlPoints[hitindex + 1] = curveControlPoints[hitindex + 1] +
+		hitPoints[hitindex + 1] = hitPoints[hitindex + 1] +
 			math.sqrt(dx * dx + dz * dz) * sign(dy)
 	else
-		curveControlPoints[hitindex] = curveControlPoints[hitindex] + dx
-		curveControlPoints[hitindex + 2] = curveControlPoints[hitindex + 2] + dz
+		hitPoints[hitindex] = hitPoints[hitindex] + dx
+		hitPoints[hitindex + 2] = hitPoints[hitindex + 2] + dz
 	end
-	if curveControlPoints[hitindex + 1] < mapy then curveControlPoints[hitindex + 1] = mapy + 5 end
-	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	if hitPoints[hitindex + 1] < mapy then hitPoints[hitindex + 1] = mapy + 5 end
+	if lookHit then
+		lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
+	else
+		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	end
 
 
 	lastPathPos[1] = pos[4]
@@ -459,14 +499,20 @@ function widget:MouseRelease(x, y, button)
 	end
 	if hitindex < 0 then return end
 	hitindex = -1
-	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
-	Spring.SetDollyCameraCurve(3, curveControlPoints, nurbsKnots)
+	if lookHit then
+		lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
+		Spring.SetDollyCameraLookCurve(3, lookCPoints, lookKnots)
+	else
+		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+		Spring.SetDollyCameraCurve(3, curveControlPoints, nurbsKnots)
+	end
 	Spring.Echo("set")
 	local str = ""
 	for index, value in ipairs(curveControlPoints) do
 		str = str .. value .. ","
 	end
 	Spring.Echo(str)
+	lookHit = false
 	updateInstanceData()
 end
 
@@ -480,9 +526,9 @@ function widget:DrawWorld()
 		startposShader:Activate()
 		gl.Culling(GL.FRONT)
 		-- startposShader:SetUniformFloat("elatime", os.clock())
-		curvepointData.vao:DrawElements(GL.TRIANGLES, curvepointData.vertCount, 0, spcount)
-		camconeData.vao:DrawElements(GL.TRIANGLES, camconeData.vertCount, 0, conecount)
 		curvelineData.vao:DrawArrays(GL.LINE_STRIP, curvelineData.vertCount, 0, conecount)
+		camconeData.vao:DrawElements(GL.TRIANGLES, camconeData.vertCount, 0, conecount)
+		curvepointData.vao:DrawElements(GL.TRIANGLES, curvepointData.vertCount, 0, spcount)
 		-- gl.Culling(false)
 		startposShader:Deactivate()
 	end
