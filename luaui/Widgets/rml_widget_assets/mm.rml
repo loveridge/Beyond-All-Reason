@@ -1,0 +1,140 @@
+<rml>
+
+	<head>
+		<title>Curve Edit</title>
+		<!-- file is in same directory, can just refer to it with local path -->
+		<link type="text/rcss" href="/LuaUI/rml_common/styles.rcss" />
+		<style>
+			body {
+				width: 400dp;
+				height: 1000dp;
+
+				margin: auto;
+				font-family: Exo 2;
+			}
+
+			.container {
+				background-color: #000A;
+				border: 2dp black;
+				border-radius: 8dp;
+				padding: 8dp;
+			}
+
+			.flex {
+				display: flex;
+				flex-direction: column;
+				padding: 3px;
+			}
+
+			.flex>input {
+				padding: 10px;
+				margin: 3px;
+				flex: 1;
+			}
+
+			.flex>.double-width {
+				flex: 2;
+			}
+
+			h2 {
+				text-align: center;
+				font-size: 1.3em;
+				color: #243434;
+				border-bottom: 1px #666;
+			}
+
+			label {
+				width: 100%
+			}
+
+			.ws {
+				text-align: left;
+				width: 100%;
+				display: flex;
+			}
+
+			#top {
+				height: 80%;
+				overflow-y: scroll;
+			}
+
+			#wrap {
+				height: 100%
+			}
+
+			.filtered {
+				display: none;
+			}
+
+			.mode-button {
+				flex: 1;
+			}
+
+			.mode-input {
+				flex: 1;
+			}
+		</style>
+		<script>
+			function OnWindowLoad(document, name)
+			document: GetElementById('title').inner_rml = name
+			end
+			function printtest(val)
+			Spring.Echo("print test", val)
+			end
+			function switchCamera(v)
+			Spring.SetConfigString("CamModeName", v)
+			end
+		</script>
+	</head>
+
+	<body onload="OnWindowLoad(document, 'Curve Edit')">
+		<handle move_target="#document">
+			<div class="title-bar container">
+				<p id="title"></p>
+			</div>
+		</handle>
+		<div id="wrap" data-model="mm_dm" class="container" style="overflow: scroll;">
+			<div id="top">
+				<div id="widgetl" style="display:flex; flex-wrap:wrap;width:100%;">
+					<label>Control Points:</label>
+					<div style="flex:1;min-width:25%;height:50px;" data-for="i, index: currentInterval.curve.controlPoints">
+						<input type="text" data-event-change="changeCP('controlPoints', index)" data-value="i"></input>
+						<!--<button data-if="(index-(floor(index / 4)*4))==3" data-event-click="Spring.Echo('test')">D</button>-->
+					</div>
+					<label>Knots:</label>
+					<div style="flex:1;min-width:100%;height:50px;" data-for="i, index: currentInterval.curve.knots">
+						<input type="text" data-event-change="changeCP('knots', index)" data-value="i"></input>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- <button onclick="widget:buttonPress('test')">Self-D</button>
+		 <button onclick="Spring.Echo('test')">3</button>-->
+			<button onclick="widget:RunCam()">Run</button>
+			<button onclick="widget:PauseCam()">Pause</button>
+			<button onclick="widget:ToggleDraw()">Toggle Points</button>
+			<button onclick="widget:AddCP()">Add CP</button>
+			<button onclick="switchCamera('dolly')">Dolly</button>
+			<button onclick="switchCamera('spring')">Spring</button>
+			<div>
+				<label>Dolly Modes</label>
+				<br /><div style="display:flex">
+					<button class="mode-button" onclick="widget:SetCamMode()">Set Dolly Mode</button>
+					<input type="text" id="setdollymode" class="mode-input" value="2"></input>
+				</div><div style="display:flex">
+					<button class="mode-button" onclick="widget:SetCamRelativeMode()">Set Relative Mode</button>
+					<input type="text" id="setrelmode" class="mode-input" value="1"></input>
+				</div>
+				<div style="display:flex">
+					<button class="mode-button" onclick="widget:SetCamLookUnit()">Set Look Unit</button>
+					<input type="text" id="setlookunit" class="mode-input" value="21640"></input>
+				</div>
+				<div style="display:flex">
+					<button class="mode-button" onclick="widget:SetCamLookPosition()">Set Look Position</button>
+					<input type="text" id="setlookpos" class="mode-input" value="1,1,1"></input>
+				</div>
+			</div>
+		</div>
+	</body>
+</rml>

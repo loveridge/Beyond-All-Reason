@@ -29,12 +29,6 @@ local abs = math.abs
 
 local coopStartPoints = {} -- will contain data passed through by coop gadget
 
-local curvepointData = {}
-local camconeData = {}
-local curvelineData = {}
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
 local startposShader
 local startposVS = [[
   #version 420
@@ -106,6 +100,35 @@ local startposFS = [[
   }
 ]]
 
+local defaultInterval = {
+	dollymode = 1,
+	relativemode = 1,
+	lookmode = 1,
+	position = { 600, 600, 600 },
+	curve = {
+		degree = 3,
+		controlPoints = { 5681.79736, 740.087708, 5024.29248, 1, 4687.32471, 582.756775, 3214.92188, 1, 7622.63623, 521.41449, 1362.89307, 1, 9532.92773, 705.304077, 3649.56982, 1, 7732.88379, 445.317993, 5839.67432, 1 },
+		knots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
+	},
+	lookPosition = { 400, 400, 400 },
+	lookUnit = 1,
+	lookCurve = {
+		degree = 3,
+		controlPoints = { 4925.31641, 238.964325, 8935.6123, 1, 6268.80273, 101.809639, 8370.02539, 1, 5690.72412, 125.194092, 6273.99219, 1, 5481.41943, 149.17244, 3295.37158, 1, 7315.03369, 237.346451, 2228.64331, 1 },
+		knots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
+	}
+}
+local dollyIntervals = { defaultInterval }
+
+local curvepointData = {}
+local camconeData = {}
+local curvelineData = {}
+local context
+local document
+local updateInstanceData
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 local function shutdownVAOs()
 	if startposShader then
 		startposShader:Delete()
@@ -120,49 +143,11 @@ local function goodbye(reason)
 	widgetHandler:RemoveWidget()
 end
 
-local curveControlPoints = {
-	1331.407, 3582.310, 10525.238, 1.0,
-	2426.812, 833.980, 9029.465, 1.0,
-	3426.812, 833.980, 7029.465, 1.0,
-	3334.951, 909.047, 3736.86, 1.0,
-	8099.745, 1582.447, 55.414, 1.0,
-	--
-	-- 2331.407, 1000.310, 10525.238, 1.0,
-	-- 3426.812, 1000.980, 9029.465, 1.0,
-	-- 4426.812, 1000.980, 7029.465, 1.0,
-	-- 5334.951, 1000.047, 3736.86, 1.0,
-	-- 9099.745, 1000.447, 55.414, 1.0
-
-}
--- relative
--- curveControlPoints = { 100, 100, 0, 1, 300, 100, 00, 1, 500, 300, 700, 1, 700, 400, 800, 1, 900, 900, 900, 1 }
--- over strait
--- curveControlPoints = { 4925.31641, 238.964325, 8935.6123, 1, 6268.80273, 101.809639, 8370.02539, 1, 5690.72412, 125.194092, 6273.99219, 1, 5481.41943, 149.17244, 3295.37158, 1, 7315.03369, 237.346451, 2228.64331, 1 }
--- circle commander
-curveControlPoints = { 5681.79736, 740.087708, 5024.29248, 1, 4687.32471, 582.756775, 3214.92188, 1, 7622.63623, 521.41449, 1362.89307, 1, 9532.92773, 705.304077, 3649.56982, 1, 7732.88379, 445.317993, 5839.67432, 1 }
--- curveControlPoints = {
--- 	6936.7915,900.310059,8.45800781,1,8815.1084,833.97998,3970.25879,1,7066.93701,833.97998,5754.56104,1,6536.66895,700.046997,3305.69385,1,8333.17871,534.681519,3051.94824,1,8678.52246,456.959351,4325.76563,1,7534.47363,300.97998,5511.78027,1,6286.1377,347.291168,3305.4502,1,8797.87695,300.046997,2704.4895,1,7938.56006,654.470764,6690.35742,1,
--- }
-local nurbsKnots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
--- local nurbsKnots = { 0.0, 0.125, 0.25, .375, 0.5, .625, .75, .875, 1.0}
--- nurbsKnots = { 0,
--- 	0.077,
--- 	0.154,
--- 	0.231,
--- 	0.308,
--- 	0.385,
--- 	0.462,
--- 	0.538,
--- 	0.615,
--- 	0.692,
--- 	0.769,
--- 	0.846,
--- 	0.923,
--- 	1 }
-local lookCPoints = {
-	4925.31641, 238.964325, 8935.6123, 1, 6268.80273, 101.809639, 8370.02539, 1, 5690.72412, 125.194092, 6273.99219, 1, 5481.41943, 149.17244, 3295.37158, 1, 7315.03369, 237.346451, 2228.64331, 1
-}
-local lookKnots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
+local currentInterval = 1
+local curveControlPoints = dollyIntervals[1].curve.controlPoints
+local nurbsKnots = dollyIntervals[1].curve.knots
+local lookCPoints = dollyIntervals[1].lookCurve.controlPoints
+local lookKnots = dollyIntervals[1].lookCurve.knots
 
 local segments = 20
 local relativeMode = 1
@@ -182,6 +167,43 @@ Spring.SetDollyCameraLookCurve(3, lookCPoints, lookKnots)
 local cpRad = 150
 local hitindex = -1
 
+local function split(s, delimiter)
+	local result = {}
+	for match in (s .. delimiter):gmatch("(.-)" .. delimiter) do
+		table.insert(result, match)
+	end
+	return result
+end
+
+function widget:SetCamMode()
+	local m = document:GetElementById('setdollymode'):GetAttribute("value")
+	if m == '' then return end
+	Spring.SetDollyCameraMode(m)
+end
+
+function widget:SetCamRelativeMode()
+	local m = document:GetElementById('setrelmode'):GetAttribute("value")
+	if m == '' then return end
+	Spring.Echo("relmode", m)
+	cameraMode = m
+	Spring.SetDollyCameraRelativeMode(m)
+		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	updateInstanceData()
+end
+
+function widget:SetCamLookUnit()
+	local id = document:GetElementById('setlookunit'):GetAttribute("value")
+	if id == '' then return end
+	Spring.SetDollyCameraLookUnit(tonumber(id))
+end
+
+function widget:SetCamLookPosition()
+	local xyz = document:GetElementById('setlookpos'):GetAttribute("value")
+	if xyz == '' then return end
+	local s = split(xyz, ",")
+	Spring.SetDollyCameraLookPosition(tonumber(s[1]), tonumber(s[2]), tonumber(s[3]))
+end
+
 local function addTo(vector, ...)
 	for i = 1, select("#", ...) do
 		local item = select(i, ...)
@@ -196,13 +218,26 @@ local function addTo(vector, ...)
 end
 
 
+local dm
+local dataModel = {
+	changeCP = function(ev, curvename, index)
+		local v = ev.current_element:GetAttribute("value")
+		Spring.Echo("change", v, index)
+		if v == '' then return end
+		dollyIntervals[currentInterval].curve[curvename][index + 1] = tonumber(v)
+		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+		updateInstanceData()
+	end,
+	currentInterval = defaultInterval
+}
 local startboxInstanceData = {}
 local coneData = {}
 local lineData = {}
 local spcount = 0
 local linecount = 0
 local conecount = 0
-local function updateInstanceData()
+updateInstanceData = function()
+	dm.currentInterval = defaultInterval
 	startboxInstanceData = {}
 	coneData = {}
 	lineData = {}
@@ -272,6 +307,7 @@ local function updateInstanceData()
 	curvelineData.vbo:Upload(lineData)
 end
 
+
 function widget:Initialize()
 	local coneHeight = 900
 	local engineUniformBufferDefs = LuaShader.GetEngineUniformBufferDefs()
@@ -288,7 +324,7 @@ function widget:Initialize()
 			}
 		}
 	)
-	success = startposShader:Initialize()
+	local success = startposShader:Initialize()
 	if not success then
 		goodbye("Failed to compile startpos GL4 ")
 		return false
@@ -304,7 +340,8 @@ function widget:Initialize()
 	curvepointData.vao:AttachIndexBuffer(sphereIndexVBO)
 
 	curvepointData.instanceVBO = gl.GetVBO(GL.ARRAY_BUFFER, true)
-	curvepointData.instanceVBO:Define((segments + 1 + (#curveControlPoints / 4) * 2) * 7, {
+	-- curvepointData.instanceVBO:Define((segments + 1 + (#curveControlPoints / 4) * 2) * 7, {
+	curvepointData.instanceVBO:Define((segments + 1 + (40 / 4) * 2) * 7, {
 		{ id = 3, name = "color",   size = 4 },
 		{ id = 4, name = "wpos",    size = 3 },
 		{ id = 5, name = "forward", size = 3 },
@@ -359,18 +396,61 @@ function widget:Initialize()
 	curvelineData.vao:AttachIndexBuffer(indxVBO)
 	curvelineData.vbo = linevbo
 	curvelineData.vertCount = #points
+
+	context = RmlUi.GetContext("shared")
+	dm = context:OpenDataModel("mm_dm", dataModel)
+	document = context:LoadDocument("LuaUi/Widgets/rml_widget_assets/mm.rml", widget)
+	document:Show()
 	updateInstanceData()
 end
 
 function widget:Shutdown()
 	shutdownVAOs()
+	if document then
+		document:Close()
+	end
+	if context then
+		context:RemoveDataModel("mm_dm")
+	end
+end
+
+function widget:AddCP()
+	curveControlPoints[#curveControlPoints + 1] = curveControlPoints[#curveControlPoints - 3] + 100
+	curveControlPoints[#curveControlPoints + 1] = curveControlPoints[#curveControlPoints - 3] + 100
+	curveControlPoints[#curveControlPoints + 1] = curveControlPoints[#curveControlPoints - 3] + 100
+	curveControlPoints[#curveControlPoints + 1] = 1
+	local total = #nurbsKnots + 1
+	for i = 1, total, 1 do
+		nurbsKnots[i] = (i - 1) / (total - 1)
+	end
+	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	Spring.Echo(points, total, nurbsKnots)
+	updateInstanceData()
+end
+
+local paused = false
+function widget:RunCam()
+	Spring.RunDollyCamera(10000)
+	paused = false
+end
+
+function widget:PauseCam()
+	if paused then
+		Spring.ResumeDollyCamera()
+	else
+		Spring.PauseDollyCamera()
+	end
+	paused = not paused
 end
 
 local draw = true
+function widget:ToggleDraw()
+	draw = not draw
+end
+
 local fadeFromBlack = false
-local paused = false
 function widget:KeyPress(key, modifier, isRepeat)
-	Spring.Echo(key)
+	-- Spring.Echo(key)
 	if key == 111 then
 		draw = not draw
 		if not draw then
@@ -405,7 +485,7 @@ function widget:MousePress(x, y, button)
 	for i = 2, #curveControlPoints, 4 do
 		local sx, sy = Spring.WorldToScreenCoords(curveControlPoints[i - 1], curveControlPoints[i],
 			curveControlPoints[i + 1])
-		Spring.Echo(mx, my, sx, sy)
+		-- Spring.Echo(mx, my, sx, sy)
 		-- if abs(sx - mx) < cpRad and abs(sy - my) < cpRad then
 		local _, pos = Spring.TraceScreenRay(mx, my, true, false, true, false, curveControlPoints[i])
 		if not pos then return end
@@ -426,7 +506,7 @@ function widget:MousePress(x, y, button)
 	end
 	for i = 2, #lookCPoints, 4 do
 		local sx, sy = Spring.WorldToScreenCoords(lookCPoints[i - 1], lookCPoints[i], lookCPoints[i + 1])
-		Spring.Echo(mx, my, sx, sy)
+		-- Spring.Echo(mx, my, sx, sy)
 		-- if abs(sx - mx) < cpRad and abs(sy - my) < cpRad then
 		local _, pos = Spring.TraceScreenRay(mx, my, true, false, true, false, lookCPoints[i])
 		if not pos then return end
