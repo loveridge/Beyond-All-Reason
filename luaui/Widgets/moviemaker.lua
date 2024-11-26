@@ -101,6 +101,7 @@ local startposFS = [[
 ]]
 
 local defaultInterval = {
+	name = "default",
 	dollymode = 1,
 	relativemode = 1,
 	lookmode = 1,
@@ -228,7 +229,8 @@ local dataModel = {
 		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 		updateInstanceData()
 	end,
-	currentInterval = defaultInterval
+	currentInterval = defaultInterval,
+	allIntervals = dollyIntervals
 }
 local startboxInstanceData = {}
 local coneData = {}
