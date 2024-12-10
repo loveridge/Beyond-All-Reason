@@ -119,10 +119,16 @@
 			<button onclick="switchCamera('spring')">Spring</button>
 			<div>
 				<label>Dolly Modes</label>
-				<br /><div style="display:flex">
+				<br />
+				<div style="display:flex">
 					<button class="mode-button" onclick="widget:SetCamMode()">Set Dolly Mode</button>
 					<input type="text" id="setdollymode" class="mode-input" value="2"></input>
-				</div><div style="display:flex">
+				</div>
+				<div style="display:flex">
+					<button class="mode-button" onclick="widget:SetRunTime()">Set Run Time [ms]</button>
+					<input type="text" id="setruntime" class="mode-input" value="10000"></input>
+				</div>
+				<div style="display:flex">
 					<button class="mode-button" onclick="widget:SetCamRelativeMode()">Set Relative Mode</button>
 					<input type="text" id="setrelmode" class="mode-input" value="1"></input>
 				</div>

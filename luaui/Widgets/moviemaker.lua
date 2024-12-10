@@ -102,6 +102,7 @@ local startposFS = [[
 
 local defaultInterval = {
 	name = "default",
+	runtime = 10000,
 	dollymode = 1,
 	relativemode = 1,
 	lookmode = 1,
@@ -180,6 +181,12 @@ function widget:SetCamMode()
 	local m = document:GetElementById('setdollymode'):GetAttribute("value")
 	if m == '' then return end
 	Spring.SetDollyCameraMode(m)
+end
+
+function widget:SetRunTime()
+	local m = document:GetElementById('setruntime'):GetAttribute("value")
+	if m == '' then return end
+	dollyIntervals[currentInterval].runtime = tonumber(m)
 end
 
 function widget:SetCamRelativeMode()
@@ -432,7 +439,7 @@ end
 
 local paused = false
 function widget:RunCam()
-	Spring.RunDollyCamera(10000)
+	Spring.RunDollyCamera(dollyIntervals[currentInterval].runtime)
 	paused = false
 end
 
