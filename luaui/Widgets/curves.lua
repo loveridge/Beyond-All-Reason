@@ -1,6 +1,6 @@
 function widget:GetInfo()
 	return {
-		name = "Movie Maker",
+		name = "Curve Editor",
 		desc = "",
 		author = "lov",
 		date = "2024",
@@ -408,7 +408,7 @@ function widget:Initialize()
 
 	context = RmlUi.GetContext("shared")
 	dm = context:OpenDataModel("mm_dm", dataModel)
-	document = context:LoadDocument("LuaUi/Widgets/rml_widget_assets/mm.rml", widget)
+	document = context:LoadDocument("LuaUi/Widgets/rml_widget_assets/curves.rml", widget)
 	document:Show()
 	updateInstanceData()
 end
