@@ -123,13 +123,18 @@
 		<div id="wrap" data-model="mm_dm" class="container" style="overflow: scroll;">
 			<div id="top">
 				<div id="widgetl" style="display:flex; flex-wrap:wrap;width:100%;">
+					<label>test</label>
+					<div data-for="i, index: arr">
+						{{i.name}}
+					</div>
 					<label>Control Points:</label>
 					<div style="flex:1;min-width:25%;height:50px;" data-for="i, index: currentInterval.curve.controlPoints">
 						<input type="text" data-event-change="changeCP('controlPoints', index)" data-value="i"></input>
 						<!--<button data-if="(index-(floor(index / 4)*4))==3" data-event-click="Spring.Echo('test')">D</button>-->
 					</div>
-					<label>Knots:</label>
+					<label>Knots: x{{currentInterval.curve.knots[0]}}</label>
 					<div style="flex:1;min-width:100%;height:50px;" data-for="i, index: currentInterval.curve.knots">
+					<p>test {{i}}</p>
 						<input type="text" data-event-change="changeCP('knots', index)" data-value="i"></input>
 					</div>
 				</div>

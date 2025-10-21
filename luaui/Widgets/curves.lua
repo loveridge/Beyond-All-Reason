@@ -236,6 +236,7 @@ local dataModel = {
 		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 		updateInstanceData()
 	end,
+	arr = {{name="n1"}, {name="n2"}},
 	currentInterval = defaultInterval,
 	allIntervals = dollyIntervals
 }
@@ -607,6 +608,8 @@ end
 
 function widget:DrawWorld()
 	if not draw then return end
+	dm.currentInterval.curve.knots[1] = Spring.GetGameFrame()
+	-- dm:__SetDirty("currentInterval")
 	gl.Blending(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
 
 
