@@ -2,7 +2,7 @@ return {
 	corhllt = {
 		buildangle = 32768,
 		buildpic = "CORHLLT.DDS",
-		buildtime = 5440,
+		buildtime = 4900,
 		canrepeat = false,
 		cantbetransported = false,
 		collisionvolumeoffsets = "0 6 0",
@@ -126,12 +126,14 @@ return {
 				soundhitwet = "sizzle",
 				soundstart = "lasrfir3",
 				soundtrigger = 1,
-				targetmoveerror = 0.1,
 				thickness = 2,
 				tolerance = 10000,
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 2250,
+				customparams = {
+					exclude_preaim = true,
+				},
 				damage = {
 					commanders = 112.5,
 					default = 75,
@@ -163,12 +165,14 @@ return {
 				soundhitwet = "sizzle",
 				soundstart = "lasrfir3",
 				soundtrigger = 1,
-				targetmoveerror = 0.1,
 				thickness = 2,
 				tolerance = 10000,
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 2250,
+				customparams = {
+					exclude_preaim = true,
+				},
 				damage = {
 					commanders = 112.5,
 					default = 75,

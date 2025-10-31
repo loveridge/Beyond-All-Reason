@@ -31,8 +31,8 @@ return {
 		customparams = {
 			usebuildinggrounddecal = true,
 			buildinggrounddecaltype = "decals/armbotrail_aoplane.dds",
-			buildinggrounddecalsizey = 11,
-			buildinggrounddecalsizex = 11,
+			buildinggrounddecalsizey = 12,
+			buildinggrounddecalsizex = 12,
 			buildinggrounddecaldecayspeed = 30,
 			unitgroup = 'weapon',
 			canareaattack = 1,
@@ -151,6 +151,7 @@ return {
 				customparams = {
 					spawns_name = "armpw",
 					spawns_surface = "LAND", -- Available: "LAND SEA" blah
+					stockpilelimit = 50,
 				},
 				damage = {
 					default = 10,

@@ -6,7 +6,6 @@ return {
 		buildangle = 2048,
 		energycost = 8100,
 		metalcost = 640,
-		buildingmask = 0,
 		buildpic = "legmoho.DDS",
 		buildtime = 14100,
 		canrepeat = false,
@@ -35,8 +34,8 @@ return {
 		customparams = {
 			usebuildinggrounddecal = true,
 			buildinggrounddecaltype = "decals/legmoho_aoplane.dds",
-			buildinggrounddecalsizey = 7.6,
-			buildinggrounddecalsizex = 7.6,
+			buildinggrounddecalsizey = 8,
+			buildinggrounddecalsizex = 8,
 			buildinggrounddecaldecayspeed = 30,
 			unitgroup = 'metal',
 			cvbuildable = true,

@@ -3,10 +3,10 @@ return {
 		maxacc = 0,
 		maxdec = 0,
 		buildangle = 32000,
-		energycost = 550,--700
-		metalcost = 70,--90
+		energycost = 550,
+		metalcost = 70,
 		buildpic = "LEGLHT.DDS",
-		buildtime = 2450,--2720
+		buildtime = 2200,
 		canrepeat = false,
 		cantbetransported = false,
 		collisionvolumeoffsets = "0 -7 0",
@@ -32,8 +32,8 @@ return {
 		customparams = {
 			usebuildinggrounddecal = true,
 			buildinggrounddecaltype = "decals/leglht_aoplane.dds",
-			buildinggrounddecalsizey = 4,
-			buildinggrounddecalsizex = 4,
+			buildinggrounddecalsizey = 5,
+			buildinggrounddecalsizex = 5,
 			buildinggrounddecaldecayspeed = 30,
 			unitgroup = 'weapon',
 			basename = "base",
@@ -122,6 +122,7 @@ return {
 				impactonly = 1,
 				impulsefactor = 0,
 				laserflaresize = 7,
+				leadlimit = 0,
 				name = "Light g2g Heat Ray",
 				noselfdamage = true,
 				predictboost = 1,
@@ -133,7 +134,6 @@ return {
 				soundhitwet = "sizzle",
 				soundstart = "lasrfir3",
 				soundtrigger = 1,
-				targetmoveerror = 0.2,
 				thickness = 2.66,
 				tolerance = 10000,
 				turret = true,
@@ -144,6 +144,9 @@ return {
 					default = 200,
 					vtol = 25,
 				},
+				customparams = {
+					exclude_preaim = true
+				}
 			},
 		},
 		weapons = {

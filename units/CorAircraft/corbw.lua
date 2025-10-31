@@ -26,13 +26,14 @@ return {
 		script = "Units/CORBW.cob",
 		seismicsignature = 0,
 		selfdestructas = "tinyExplosionGenericSelfd",
-		sightdistance = 364,
+		sightdistance = 430,
 		speed = 280.5,
 		turninplaceanglelimit = 360,
 		turnrate = 1100,
 		upright = true,
 		usesmoothmesh = 0,
 		customparams = {
+			crashable = 0,
 			model_author = "Mr Bob",
 			normaltex = "unittextures/cor_normal.dds",
 			subfolder = "CorAircraft",
@@ -101,6 +102,9 @@ return {
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 800,
+				customparams = {
+					noattackrangearc = 1,
+				},
 				damage = {
 					default = 600,
 				},

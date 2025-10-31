@@ -1,3 +1,5 @@
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name = "Commander Name Tags",
@@ -29,9 +31,6 @@ local showSkillValue = true
 local playerRankSize = fontSize * 1.05
 local playerRankImages = "luaui\\images\\advplayerslist\\ranks\\"
 
-local comLevelSize = fontSize * 2.5
-local comLevelImages = "luaui\\images\\Ranks\\rank"
-
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -46,8 +45,9 @@ local IsUnitVisible = Spring.IsUnitVisible
 local IsUnitIcon = Spring.IsUnitIcon
 local GetCameraPosition = Spring.GetCameraPosition
 local GetUnitPosition = Spring.GetUnitPosition
-local GetUnitExperience = Spring.GetUnitExperience
-local GetUnitRulesParam = Spring.GetUnitRulesParam
+
+
+local ColorIsDark = Spring.Utilities.Color.ColorIsDark
 
 local glTexture = gl.Texture
 local glTexRect = gl.TexRect
@@ -68,8 +68,6 @@ local diag = math.diag
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-
-
 
 local vsx, vsy = Spring.GetViewGeometry()
 
@@ -111,7 +109,6 @@ local CheckedForSpec = false
 
 local spec = Spring.GetSpectatingState()
 local myTeamID = Spring.GetMyTeamID()
-local myPlayerID = Spring.GetMyPlayerID()
 local GaiaTeam = Spring.GetGaiaTeamID()
 
 local comHeight = {}
@@ -157,19 +154,22 @@ local function GetCommAttributes(unitID, unitDefID)
 		else
 			name = Spring.I18N('ui.playersList.aiName', { name = Spring.GetGameRulesParam('ainame_' .. team) })
 		end
-		
+
 	else
 		if UnitDefs[unitDefID].customParams.decoyfor then
 			name = Spring.I18N('units.decoyCommanderNameTag')
 		else
 			local players = GetPlayerList(team)
 			name = (#players > 0) and GetPlayerInfo(players[1], false) or '------'
+			name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(players[1])) or name
 			if players[1] then
+				name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(players[1])) or name
 				playerRank = select(9, GetPlayerInfo(players[1], false))
 			end
 
 			for _, pID in ipairs(players) do
 				local pname, active, isspec = GetPlayerInfo(pID, false)
+				pname = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(pID)) or pname
 				playerRank = select(9, GetPlayerInfo(pID, false))
 				if active and not isspec then
 					name = pname
@@ -181,7 +181,7 @@ local function GetCommAttributes(unitID, unitDefID)
 
 	local r, g, b, a = GetTeamColor(team)
 	local bgColor = { 0, 0, 0, 1 }
-	if (r + g * 1.2 + b * 0.4) < 0.65 then
+	if ColorIsDark(r, g, b) then
 		bgColor = { 1, 1, 1, 1 }	-- try to keep these values the same as the playerlist
 	end
 
@@ -189,10 +189,18 @@ local function GetCommAttributes(unitID, unitDefID)
 	if showSkillValue then
 		local playerID = select(2, GetTeamInfo(team, false))
 		local customtable = select(11, GetPlayerInfo(playerID))
+		if playerID then
+			-- Note: WG.playernames.getPlayername would be used for names, but skill data comes from customtable
+			-- so no need to use WG.playernames.getPlayername here as we're getting skill, not name
+		end
 		if customtable and customtable.skill then
 			skill = customtable.skill
 			skill = skill and tonumber(skill:match("-?%d+%.?%d*")) or 0
 			skill = round(skill, 0)
+
+			if customtable.skilluncertainty and tonumber(customtable.skilluncertainty) > 6.65 then
+				skill = "??"
+			end
 		end
 	end
 
@@ -223,7 +231,7 @@ local function createComnameList(attributes)
 			x = (playerRankSize*0.5)
 		end
 		local outlineColor = { 0, 0, 0, 1 }
-		if (attributes[2][1] + attributes[2][2] * 1.2 + attributes[2][3] * 0.4) < 0.65 then
+		if ColorIsDark(attributes[2][1], attributes[2][2], attributes[2][3]) then
 			outlineColor = { 1, 1, 1, 1 }		-- try to keep these values the same as the playerlist
 		end
 		local name = attributes[1]
@@ -275,7 +283,7 @@ end
 
 
 local function CheckCom(unitID, unitDefID, unitTeam)
-	if comHeight[unitDefID] then
+	if comHeight[unitDefID] and unitTeam ~= GaiaTeam then
 		if unitTeam ~= GaiaTeam then
 			comms[unitID] = GetCommAttributes(unitID, unitDefID)
 		end
@@ -309,11 +317,7 @@ local function CheckAllComs()
 	local allUnits = GetAllUnits()
 	for i = 1, #allUnits do
 		local unitID = allUnits[i]
-		local unitDefID = GetUnitDefID(unitID)
-		local unitTeam = GetUnitTeam(unitID)
-		if comHeight[unitDefID] and unitTeam ~= GaiaTeam then
-			comms[unitID] = GetCommAttributes(unitID, unitDefID)
-		end
+		CheckCom(unitID, GetUnitDefID(unitID), GetUnitTeam(unitID))
 	end
 end
 
@@ -336,16 +340,24 @@ function widget:Update(dt)
 	if not singleTeams and WG['playercolorpalette'] ~= nil and WG['playercolorpalette'].getSameTeamColors() then
 		if myTeamID ~= Spring.GetMyTeamID() then
 			-- old
-			local name = GetPlayerInfo(select(2, GetTeamInfo(myTeamID, false)), false)
+			local teamPlayerID = select(2, GetTeamInfo(myTeamID, false))
+			local name = GetPlayerInfo(teamPlayerID, false)
+			name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(teamPlayerID)) or name
 			if comnameList[name] ~= nil then
 				comnameList[name] = gl.DeleteList(comnameList[name])
 			end
-			-- new
+			if comnameIconList[name] ~= nil then
+				comnameIconList[name] = gl.DeleteList(comnameIconList[name])
+			end
 			myTeamID = Spring.GetMyTeamID()
-			myPlayerID = Spring.GetMyPlayerID()
-			name = GetPlayerInfo(select(2, GetTeamInfo(myTeamID, false)), false)
+			teamPlayerID = select(2, GetTeamInfo(myTeamID, false))
+			name = GetPlayerInfo(teamPlayerID, false)
+			name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(teamPlayerID)) or name
 			if comnameList[name] ~= nil then
 				comnameList[name] = gl.DeleteList(comnameList[name])
+			end
+			if comnameIconList[name] ~= nil then
+				comnameIconList[name] = gl.DeleteList(comnameIconList[name])
 			end
 			CheckAllComs()
 			sec = 0
@@ -397,7 +409,7 @@ local function createComnameIconList(unitID, attributes)
 		x, z = Spring.WorldToScreenCoords(x, y, z)
 
 		local outlineColor = { 0, 0, 0, 1 }
-		if (attributes[2][1] + attributes[2][2] * 1.2 + attributes[2][3] * 0.4) < 0.65 then
+		if ColorIsDark(attributes[2][1], attributes[2][2], attributes[2][3]) then
 			-- try to keep these values the same as the playerlist
 			outlineColor = { 1, 1, 1, 1 }
 		end
@@ -501,20 +513,24 @@ end
 function widget:PlayerChanged(playerID)
 	local prevSpec = spec
 	spec = Spring.GetSpectatingState()
-	if spec and prevSpec ~= spec then
-		CheckTeamColors()
-		RemoveLists()
-	end
+	myTeamID = Spring.GetMyTeamID()
+
 	local name, _ = GetPlayerInfo(playerID, false)
+	name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or name
 	comnameList[name] = nil
-	CheckAllComs() -- handle substitutions, etc
+	sec = 99
+
+	if spec and prevSpec ~= spec then
+		CheckedForSpec = true
+		CheckAllComs()
+	end
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam)
 	CheckCom(unitID, unitDefID, unitTeam)
 end
 
-function widget:UnitDestroyed(unitID, unitDefID, unitTeam)
+function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam, weaponDefID)
 	comms[unitID] = nil
 end
 

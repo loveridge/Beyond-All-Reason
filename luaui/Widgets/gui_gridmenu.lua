@@ -8,6 +8,8 @@
 
 -- PERF: refreshCommands does not need to fetch activecmddescs every time, e.g. setCurrentCategory
 -- PERF: updateGrid should be replaced by a method that only updates prices on cells on places where setLabBuildMode is used followed by updateGrid
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name = "Grid menu",
@@ -20,6 +22,8 @@ function widget:GetInfo()
 		handler = true,
 	}
 end
+
+local useRenderToTexture = Spring.GetConfigFloat("ui_rendertotexture", 1) == 1		-- much faster than drawing via DisplayLists only
 
 -------------------------------------------------------------------------------
 --- CACHED VALUES
@@ -36,6 +40,7 @@ local math_floor = math.floor
 local math_ceil = math.ceil
 local math_max = math.max
 local math_min = math.min
+local math_clamp = math.clamp
 local math_bit_and = math.bit_and
 
 local GL_SRC_ALPHA = GL.SRC_ALPHA
@@ -43,13 +48,12 @@ local GL_ONE_MINUS_SRC_ALPHA = GL.ONE_MINUS_SRC_ALPHA
 local GL_ONE = GL.ONE
 local GL_ONE_MINUS_SRC_COLOR = GL.ONE_MINUS_SRC_COLOR
 
+local CMD_STOP_PRODUCTION = GameCMD.STOP_PRODUCTION
 local CMD_INSERT = CMD.INSERT
-local CMD_OPT_ALT = CMD.OPT_ALT
 local CMD_OPT_CTRL = CMD.OPT_CTRL
 local CMD_OPT_SHIFT = CMD.OPT_SHIFT
 local CMD_OPT_RIGHT = CMD.OPT_RIGHT
 
-VFS.Include('luarules/configs/customcmds.h.lua')
 -------------------------------------------------------------------------------
 --- STATIC VALUES
 -------------------------------------------------------------------------------
@@ -94,7 +98,6 @@ local CONFIG = {
 	activeAreaMargin = 0.1, -- (# * bgpadding) space between the background border and active area
 	sound_queue_add = "LuaUI/Sounds/buildbar_add.wav",
 	sound_queue_rem = "LuaUI/Sounds/buildbar_rem.wav",
-	fontFile = "fonts/" .. Spring.GetConfigString("bar_font2", "Exo2-SemiBold.otf"),
 
 	categoryIcons = {
 		groups.energy,
@@ -152,6 +155,8 @@ local labBuildModeActive = false
 local activeBuilder, activeBuilderID, builderIsFactory
 local buildmenuShows = false
 local hoveredRect = false
+
+local costOverrides = {}
 
 -------------------------------------------------------------------------------
 --- KEYBIND VALUES
@@ -215,7 +220,7 @@ local ui_opacity, ui_scale
 
 local vsx, vsy = Spring.GetViewGeometry()
 
-local ordermenuLeft = vsx / 5
+local ordermenuLeft = math.floor(vsx / 5)
 local advplayerlistLeft = vsx * 0.8
 
 local zoomMult = 1.5
@@ -248,6 +253,7 @@ local currentPage = 1
 local minimapHeight = 0.235
 
 local selectedBuilders = {}
+local prevSelectedBuilders = {}
 local selectedBuildersCount = 0
 local prevSelectedBuildersCount = 0
 
@@ -314,6 +320,7 @@ local function refreshUnitDefs()
 		unitBuildOptions[udid] = ud.buildOptions
 		unitTranslatedHumanName[udid] = ud.translatedHumanName
 		unitTranslatedTooltip[udid] = ud.translatedTooltip
+
 		if ud.customParams.metal_extractor then
 			unitMetal_extractor[udid] = ud.customParams.metal_extractor
 		end
@@ -322,8 +329,6 @@ local function refreshUnitDefs()
 		end
 	end
 end
-
-refreshUnitDefs()
 
 -- starting units
 local startUnits = { UnitDefNames.armcom.id, UnitDefNames.corcom.id }
@@ -420,7 +425,7 @@ local function updateHoverState()
 				setHoveredRectTooltip(
 					rect,
 					unitTranslatedTooltip[rect.opts.uDefID],
-					"\255\240\240\240" .. unitTranslatedHumanName[rect.opts.uDefID]
+					unitTranslatedHumanName[rect.opts.uDefID]
 				)
 
 				return
@@ -842,6 +847,30 @@ local function updateBuilders()
 		return
 	end
 
+	-- check if builder type selection actually differs from previous selection
+	local changes = false
+	if #selectedBuilders ~= #prevSelectedBuilders then
+		changes = true
+	else
+		for unitDefID, count in pairs(prevSelectedBuilders) do
+			if not selectedBuilders[unitDefID] then
+				changes = true
+				break
+			end
+		end
+		if not changes then
+			for unitDefID, count in pairs(selectedBuilders) do
+				if not prevSelectedBuilders[unitDefID] then
+					changes = true
+					break
+				end
+			end
+		end
+	end
+	if not changes then
+		return
+	end
+
 	-- grow buildersRect according to current number of selected builders
 	buildersRect.xEnd = builderRects[builderTypes].xEnd
 
@@ -1115,7 +1144,7 @@ local function gridmenuKeyHandler(_, _, args, _, isRepeat)
 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
 
 	if builderIsFactory then
-		if WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID)  then
+		if WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID) and not alt then
 			local quantity = 1
 			if shift then
 				quantity = modKeyMultiplier.keyPress.shift
@@ -1239,6 +1268,14 @@ local function cycleBuilder()
 end
 
 function widget:Initialize()
+	refreshUnitDefs()
+
+	if widgetHandler:IsWidgetKnown("Build menu") then
+		-- Build menu needs to be disabled right now and before we recreate
+		-- WG['buildmenu'] since its Shutdown will destroy it.
+		widgetHandler:DisableWidgetRaw("Build menu")
+	end
+
 	myTeamID = Spring.GetMyTeamID()
 	isSpec = Spring.GetSpectatingState()
 	isPregame = Spring.GetGameFrame() == 0 and not isSpec
@@ -1247,10 +1284,6 @@ function widget:Initialize()
 	WG["buildmenu"] = {}
 
 	doUpdateClock = os.clock()
-
-	if widgetHandler:IsWidgetKnown("Build menu") then
-		widgetHandler:DisableWidget("Build menu")
-	end
 
 	units.checkGeothermalFeatures()
 
@@ -1365,6 +1398,40 @@ function widget:Initialize()
 	WG["buildmenu"].getIsShowing = function()
 		return buildmenuShows
 	end
+	---@class CostLine
+	---@field value number?
+	---@field color string?
+	---@field colorDisabled string?
+	---@field disabled boolean?
+
+	---@class CostData
+	---@field top CostLine?
+	---@field bottom CostLine?
+
+	---Override the cost display for a specific unit in the grid menu
+	---@param unitDefID number The unit definition ID to override costs for
+	---@param costData CostData Cost override configuration table with optional properties
+	WG["gridmenu"].setCostOverride = function(unitDefID, costData)
+		if unitDefID and costData then
+			costOverrides[unitDefID] = costData
+			redraw = true
+			refreshCommands()
+		end
+	end
+
+	---Clear cost overrides for a specific unit or all units
+	---@param unitDefID number? The unit definition ID to clear overrides for. If nil or not provided, clears all cost overrides.
+	WG["gridmenu"].clearCostOverrides = function(unitDefID)
+		if unitDefID then
+			costOverrides[unitDefID] = nil
+		else
+			for defID in pairs(costOverrides) do
+				costOverrides[defID] = nil
+			end
+		end
+		redraw = true
+		refreshCommands()
+	end
 end
 
 -------------------------------------------------------------------------------
@@ -1391,6 +1458,8 @@ end
 
 -- Set up all of the UI positioning
 function widget:ViewResize()
+	vsx, vsy = Spring.GetViewGeometry()
+
 	local widgetSpaceMargin = WG.FlowUI.elementMargin
 	bgpadding = WG.FlowUI.elementPadding
 	iconMargin = math.floor((bgpadding * 0.5) + 0.5)
@@ -1409,9 +1478,7 @@ function widget:ViewResize()
 
 	activeAreaMargin = math_ceil(bgpadding * CONFIG.activeAreaMargin)
 
-	vsx, vsy = Spring.GetViewGeometry()
-
-	font2 = WG["fonts"].getFont(CONFIG.fontFile, 1.2, 0.28, 1.6)
+	font2 = WG['fonts'].getFont(2)
 
 	for i, rectOpts in ipairs(defaultCategoryOpts) do
 		defaultCategoryOpts[i].nameHeight = font2:GetTextHeight(rectOpts.name)
@@ -1428,9 +1495,9 @@ function widget:ViewResize()
 	if stickToBottom then
 		local posY = math_floor(0.14 * ui_scale * vsy)
 		local posYEnd = 0
-		local posX = math_floor(ordermenuLeft * vsx) + widgetSpaceMargin
+		local posX = ordermenuLeft + widgetSpaceMargin
 		local height = posY
-		builderButtonSize = categoryButtonHeight * 1.75
+		builderButtonSize = math_floor(categoryButtonHeight * 1.75)
 
 		rows = 2
 		columns = 6
@@ -1517,7 +1584,7 @@ function widget:ViewResize()
 			categoriesRect.yEnd + (cellSize * rows)
 		)
 
-		backgroundRect:set(posX, posYEnd, posXEnd, buildpicsRect.yEnd + (bgpadding * 1.5))
+		backgroundRect:set(posX, posYEnd, posXEnd, math_floor(buildpicsRect.yEnd + (bgpadding * 1.5)))
 
 		local buttonWidth = (categoriesRect.xEnd - categoriesRect.x) / 3
 		local padding = math_max(1, math_floor(bgpadding * 0.52))
@@ -1559,6 +1626,14 @@ function widget:ViewResize()
 	checkGuishader(true)
 
 	redraw = true
+
+	if buildmenuTex then
+		gl.DeleteTexture(buildmenuBgTex)
+		buildmenuBgTex = nil
+		gl.DeleteTexture(buildmenuTex)
+		buildmenuTex = nil
+	end
+	updateGrid()
 end
 
 -- PERF: It seems we get i18n resources inside draw functions, we should do that in state instead
@@ -1601,7 +1676,7 @@ function widget:Update(dt)
 		local prevOrdermenuHeight = ordermenuHeight
 		if WG["ordermenu"] then
 			local oposX, _, owidth, oheight = WG["ordermenu"].getPosition()
-			ordermenuLeft = oposX + owidth
+			ordermenuLeft = math_floor((oposX + owidth) * vsx)
 			ordermenuHeight = oheight
 		end
 		if
@@ -1625,12 +1700,23 @@ function widget:Update(dt)
 		end
 	end
 
+	local prevBuildmenuShows = buildmenuShows
 	if not (isPregame or activeBuilder or alwaysShow) then
 		buildmenuShows = false
-
-		return
 	else
 		buildmenuShows = true
+	end
+
+	if WG['guishader'] and prevBuildmenuShows ~= buildmenuShows and dlistGuishader then
+		if buildmenuShows then
+			WG['guishader'].InsertDlist(dlistGuishader, 'buildmenu')
+		else
+			WG['guishader'].RemoveDlist('buildmenu')
+		end
+	end
+
+	if not buildmenuShows then
+		return
 	end
 
 	if activeBuilder then
@@ -1679,6 +1765,23 @@ local function drawBuildMenuBg()
 		((posY - height > 0 or backgroundRect.x <= 0) and 1 or 0),
 		0
 	)
+
+	if selectedBuildersCount > 1 and activeBuilder then
+		height = backgroundRect:getHeight()
+		UiElement(
+			buildersRect.x,
+			buildersRect.y,
+			buildersRect.xEnd + bgpadding * 2,
+			buildersRect.yEnd + bgpadding + (iconMargin * 2),
+			(backgroundRect.x > 0 and 1 or 0),
+			1,
+			((posY - height > 0 or backgroundRect.x <= 0) and 1 or 0),
+			0,
+			1,
+			1,
+			0
+		)
+	end
 end
 
 local function drawButton(rect)
@@ -1690,8 +1793,8 @@ local function drawButton(rect)
 
 	local color = highlight and 0.2 or 0
 
-	local color1 = { color, color, color, math_max(0.55, math_min(0.95, ui_opacity * 1.25)) } -- bottom
-	local color2 = { color, color, color, math_max(0.55, math_min(0.95, ui_opacity * 1.25)) } -- top
+	local color1 = { color, color, color, math_clamp(ui_opacity * 1.25, 0.55, 0.95) } -- bottom
+	local color2 = { color, color, color, math_clamp(ui_opacity * 1.25, 0.55, 0.95) } -- top
 
 	if highlight then
 		gl.Blending(GL_SRC_ALPHA, GL_ONE)
@@ -1871,24 +1974,83 @@ local function drawCell(rect)
 
 	-- price
 	if metalPrice then
-		local metalColor = disabled and "\255\125\125\125" or "\255\245\245\245"
-		local energyColor = disabled and "\255\135\135\135" or "\255\255\255\000"
-		local metalPriceText = metalColor .. metalPrice
-		local energyPriceText = energyColor .. energyPrice
-		font2:Print(
-			metalPriceText,
-			rect.xEnd - cellPadding - (cellInnerSize * 0.048),
-			rect.y + cellPadding + (priceFontSize * 1.35),
-			priceFontSize,
-			"ro"
-		)
-		font2:Print(
-			energyPriceText,
-			rect.xEnd - cellPadding - (cellInnerSize * 0.048),
-			rect.y + cellPadding + (priceFontSize * 0.35),
-			priceFontSize,
-			"ro"
-		)
+		local costOverride = costOverrides and costOverrides[uid]
+		
+		if costOverride then
+			local topValue = costOverride.top and costOverride.top.value or metalPrice
+			local bottomValue = costOverride.bottom and costOverride.bottom.value or energyPrice
+			
+			if costOverride.top and not costOverride.top.disabled then
+				local costColor = costOverride.top.color or "\255\100\255\100"
+				if disabled then
+					costColor = costOverride.top.colorDisabled or "\255\100\200\100"
+				end
+				local costPrice = formatPrice(math.floor(topValue))
+				local costPriceText = costColor .. costPrice
+				font2:Print(
+					costPriceText,
+					rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+					rect.y + cellPadding + (priceFontSize * 1.35),
+					priceFontSize,
+					"ro"
+				)
+			elseif not costOverride.top then
+				local metalColor = disabled and "\255\125\125\125" or "\255\245\245\245"
+				local metalPriceText = metalColor .. metalPrice
+				font2:Print(
+					metalPriceText,
+					rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+					rect.y + cellPadding + (priceFontSize * 1.35),
+					priceFontSize,
+					"ro"
+				)
+			end
+			
+			if costOverride.bottom and not costOverride.bottom.disabled then
+				local costColor = costOverride.bottom.color or "\255\255\255\000"
+				if disabled then
+					costColor = costOverride.bottom.colorDisabled or "\255\135\135\135"
+				end
+				local costPrice = formatPrice(math.floor(bottomValue))
+				local costPriceText = costColor .. costPrice
+				font2:Print(
+					costPriceText,
+					rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+					rect.y + cellPadding + (priceFontSize * 0.35),
+					priceFontSize,
+					"ro"
+				)
+			elseif not costOverride.bottom then
+				local energyColor = disabled and "\255\135\135\135" or "\255\255\255\000"
+				local energyPriceText = energyColor .. energyPrice
+				font2:Print(
+					energyPriceText,
+					rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+					rect.y + cellPadding + (priceFontSize * 0.35),
+					priceFontSize,
+					"ro"
+				)
+			end
+		else
+			local metalColor = disabled and "\255\125\125\125" or "\255\245\245\245"
+			local energyColor = disabled and "\255\135\135\135" or "\255\255\255\000"
+			local metalPriceText = metalColor .. metalPrice
+			local energyPriceText = energyColor .. energyPrice
+			font2:Print(
+				metalPriceText,
+				rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+				rect.y + cellPadding + (priceFontSize * 1.35),
+				priceFontSize,
+				"ro"
+			)
+			font2:Print(
+				energyPriceText,
+				rect.xEnd - cellPadding - (cellInnerSize * 0.048),
+				rect.y + cellPadding + (priceFontSize * 0.35),
+				priceFontSize,
+				"ro"
+			)
+		end
 	end
 
 	-- hotkey draw
@@ -1993,6 +2155,7 @@ local function drawCategories()
 
 		local fontHeight = rect.opts.nameHeight * categoryFontSize
 		local fontHeightOffset = fontHeight * 0.34
+
 		font2:Print(
 			rect.opts.name,
 			rect.x + (bgpadding * 7),
@@ -2196,24 +2359,6 @@ local function drawBuilder(rect)
 end
 
 local function drawBuilders()
-	-- draw background
-	local height = backgroundRect:getHeight()
-	local posY = backgroundRect.y
-
-	UiElement(
-		buildersRect.x,
-		buildersRect.y,
-		buildersRect.xEnd + bgpadding * 2,
-		buildersRect.yEnd + bgpadding + (iconMargin * 2),
-		(backgroundRect.x > 0 and 1 or 0),
-		1,
-		((posY - height > 0 or backgroundRect.x <= 0) and 1 or 0),
-		0,
-		1,
-		1,
-		0,
-		1
-	)
 
 	-- draw builders
 	for i = 1, selectedBuildersCount do
@@ -2244,7 +2389,8 @@ local function drawGrid()
 end
 
 local function drawBuildMenu()
-	font2:Begin()
+	font2:Begin(useRenderToTexture)
+	font2:SetTextColor(1,1,1,1)
 
 	local drawBackScreen = (currentCategory and not builderIsFactory)
 		or (builderIsFactory and useLabBuildMode and labBuildModeActive)
@@ -2391,7 +2537,7 @@ function widget:MousePress(x, y, button)
 					then
 						local alt, ctrl, meta, shift = Spring.GetModKeyState()
 						if button ~= 3 then
-							if builderIsFactory and WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID) then
+							if builderIsFactory and WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID) and not alt then
 								local amount = 1
 								if ctrl then
 									amount = amount * modKeyMultiplier.click.ctrl
@@ -2410,7 +2556,7 @@ function widget:MousePress(x, y, button)
 								pickBlueprint(unitDefID)
 							end
 						elseif builderIsFactory and spGetCmdDescIndex(-unitDefID) then
-							if not (WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID)) then
+							if not (WG.Quotas and WG.Quotas.isOnQuotaMode(activeBuilderID) and not alt) then
 								Spring.PlaySoundFile(CONFIG.sound_queue_rem, 0.75, "ui")
 								setActiveCommand(spGetCmdDescIndex(-unitDefID), 3, false, true)
 							else
@@ -2497,10 +2643,6 @@ function widget:DrawScreen()
 			end
 		end
 	else
-		if redraw then
-			dlistBuildmenu = gl.DeleteList(dlistBuildmenu)
-			redraw = nil
-		end
 
 		if WG["guishader"] then
 			if dlistGuishader then
@@ -2509,14 +2651,70 @@ function widget:DrawScreen()
 			checkGuishaderBuilders()
 		end
 
-		-- create buildmenu drawlists
-		if not dlistBuildmenu then
-			dlistBuildmenu = gl.CreateList(function()
-				drawBuildMenuBg()
-				drawBuildMenu()
-			end)
+		local buildersRectYend = math_ceil((buildersRect.yEnd + bgpadding + (iconMargin * 2)))
+		if redraw then
+			redraw = nil
+			if useRenderToTexture then
+				if not buildmenuBgTex then
+					buildmenuBgTex = gl.CreateTexture(math_floor(backgroundRect.xEnd-backgroundRect.x), math_floor(buildersRectYend-backgroundRect.y), {
+						target = GL.TEXTURE_2D,
+						format = GL.RGBA,
+						fbo = true,
+					})
+				end
+				if buildmenuBgTex then
+					gl.R2tHelper.RenderToTexture(buildmenuBgTex,
+						function()
+							gl.Translate(-1, -1, 0)
+							gl.Scale(2 / math_floor(backgroundRect.xEnd-backgroundRect.x), 2 / math_floor(buildersRectYend-backgroundRect.y), 0)
+							gl.Translate(-backgroundRect.x, -backgroundRect.y, 0)
+							drawBuildMenuBg()
+						end,
+						useRenderToTexture
+					)
+				end
+				if not buildmenuTex then
+					buildmenuTex = gl.CreateTexture(math_floor(backgroundRect.xEnd-backgroundRect.x)*2, math_floor(buildersRectYend-backgroundRect.y)*2, {	--*(vsy<1400 and 2 or 2)
+						target = GL.TEXTURE_2D,
+						format = GL.RGBA,
+						fbo = true,
+					})
+				end
+				if buildmenuTex then
+					gl.R2tHelper.RenderToTexture(buildmenuTex,
+						function()
+							gl.Translate(-1, -1, 0)
+							gl.Scale(2 / math_floor(backgroundRect.xEnd-backgroundRect.x), 2 / math_floor(buildersRectYend-backgroundRect.y), 0)
+							gl.Translate(-backgroundRect.x, -backgroundRect.y, 0)
+							drawBuildMenu()
+						end,
+						useRenderToTexture
+					)
+				end
+			else
+				gl.DeleteList(dlistBuildmenu)
+				dlistBuildmenu = gl.CreateList(function()
+					drawBuildMenuBg()
+					drawBuildMenu()
+				end)
+			end
 		end
-		gl.CallList(dlistBuildmenu)
+		if useRenderToTexture then
+			if buildmenuBgTex then
+				-- background element
+				gl.R2tHelper.BlendTexRect(buildmenuBgTex, backgroundRect.x, backgroundRect.y, backgroundRect.xEnd, buildersRectYend, useRenderToTexture)
+			end
+		end
+		if useRenderToTexture then
+			if buildmenuTex then
+				-- content
+				gl.R2tHelper.BlendTexRect(buildmenuTex, backgroundRect.x, backgroundRect.y, backgroundRect.xEnd, buildersRectYend, useRenderToTexture)
+			end
+		else
+			if dlistBuildmenu then
+				gl.CallList(dlistBuildmenu)
+			end
+		end
 
 		if redrawProgress then
 			dlistProgress = gl.DeleteList(dlistProgress)
@@ -2615,6 +2813,7 @@ function widget:SelectionChanged(newSel)
 	activeBuilderID = nil
 	builderIsFactory = false
 	labBuildModeActive = false
+	prevSelectedBuilders = selectedBuilders
 	selectedBuilders = {}
 	selectedBuildersCount = 0
 	currentPage = 1
@@ -2727,10 +2926,16 @@ end
 function widget:Shutdown()
 	dlistBuildmenu = gl.DeleteList(dlistBuildmenu)
 	dlistProgress = gl.DeleteList(dlistProgress)
-
+	if buildmenuTex then
+		gl.DeleteTexture(buildmenuBgTex)
+		buildmenuBgTex = nil
+		gl.DeleteTexture(buildmenuTex)
+		buildmenuTex = nil
+	end
 	if WG["guishader"] and dlistGuishader then
 		WG["guishader"].DeleteDlist("buildmenu")
 		WG["guishader"].DeleteDlist("buildmenubuilders")
+		WG["guishader"].DeleteDlist("buildmenubuildersnext")
 		dlistGuishader = nil
 	end
 	WG["buildmenu"] = nil

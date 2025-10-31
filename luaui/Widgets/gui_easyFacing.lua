@@ -1,6 +1,8 @@
 include("keysym.h.lua")
 local versionNumber = "1.5"
 
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name      = "Easy Facing",
@@ -221,7 +223,6 @@ local function drawOrientation()
 		return		-- quit here if not a build command
 	end
 
-	-- check for an empty buildlist to avoid to draw for air repair pads
 	local unitDefID = forceShowUnitDefID or -cmd_id
 	if drawForAll == false and isntFactory[unitDefID] then
 		return

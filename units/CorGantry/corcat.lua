@@ -24,7 +24,7 @@ return {
 		movestate = 0,
 		nochasecategory = "VTOL",
 		objectname = "Units/CORCAT.s3o",
-		script = "Units/CORCAT.cob",
+		script = "Units/corcat.cob",
 		seismicsignature = 0,
 		selfdestructas = "explosiont3xl",
 		sightdistance = 700,
@@ -117,7 +117,7 @@ return {
 				explosiongenerator = "custom:genericshellexplosion-catapult",
 				firestarter = 70,
 				flighttime = 3.2,
-				impulsefactor = 0.123,
+				impulsefactor = 0.6,
 				metalpershot = 0,
 				model = "catapultmissile.s3o",
 				movingaccuracy = 600,
@@ -146,6 +146,10 @@ return {
 				weapontype = "MissileLauncher",
 				weaponvelocity = 530,
 				wobble = 2000,
+				customparams = {
+					overrange_distance = 1553,
+					projectile_destruction_method = "descend",
+				},
 				damage = {
 					default = 450,
 				},

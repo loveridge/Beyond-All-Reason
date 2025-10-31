@@ -1,3 +1,5 @@
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name = "Selected Units GL4",
@@ -20,9 +22,19 @@ local selectionHighlight = true
 local mouseoverHighlight = true
 
 ---- GL4 Backend Stuff----
-local selectionVBO = nil
+local selectionVBOGround = nil
+local selectionVBOAir = nil
+
+local mapHasWater = (Spring.GetGroundExtremes() < 0)
+
 local selectShader = nil
-local luaShaderDir = "LuaUI/Widgets/Include/"
+local luaShaderDir = "LuaUI/Include/"
+
+local InstanceVBOTable = gl.InstanceVBOTable
+
+local pushElementInstance = InstanceVBOTable.pushElementInstance
+local popElementInstance  = InstanceVBOTable.popElementInstance
+
 
 local hasBadCulling = ((Platform.gpuVendor == "AMD" and Platform.osFamily == "Linux") == true)
 -- Localize for speedups:
@@ -63,8 +75,10 @@ for unitDefID, unitDef in pairs(UnitDefs) do
 	end
 end
 local unitBufferUniformCache = {0}
+
+
 local function AddPrimitiveAtUnit(unitID)
-	if Spring.ValidUnitID(unitID) ~= true or Spring.GetUnitIsDead(unitID) == true then return end
+	if Spring.ValidUnitID(unitID) ~= true or Spring.GetUnitIsDead(unitID) == true or Spring.IsGUIHidden() then return end
 	local gf = Spring.GetGameFrame()
 
 	if not unitUnitDefID[unitID] then
@@ -103,7 +117,7 @@ local function AddPrimitiveAtUnit(unitID)
 	end
 	--Spring.Echo(unitID,radius,radius, Spring.GetUnitTeam(unitID), numvertices, 1, gf)
 	pushElementInstance(
-		selectionVBO, -- push into this Instance VBO Table
+		(unitCanFly[unitDefID] and selectionVBOAir) or selectionVBOGround, -- push into this Instance VBO Table
 		{
 			length, width, cornersize, additionalheight,  -- lengthwidthcornerheight
 			unitTeam[unitID], -- teamID
@@ -119,9 +133,8 @@ local function AddPrimitiveAtUnit(unitID)
 	)
 end
 
-local drawFrame = 0
-function widget:DrawWorldPreUnit()
-	drawFrame = drawFrame + 1
+
+local function DrawSelections(selectionVBO, isAir)
 	if selectionVBO.usedElements > 0 then
 		if hasBadCulling then
 			gl.Culling(false)
@@ -131,7 +144,7 @@ function widget:DrawWorldPreUnit()
 		selectShader:Activate()
 		selectShader:SetUniform("iconDistance", 99999) -- pass
 		glStencilTest(true) --https://learnopengl.com/Advanced-OpenGL/Stencil-testing
-		glDepthTest(true)
+		glDepthTest(true) -- One really interesting thing is that the depth test does not seem to be obeyed within DrawWorldPreUnit
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE) -- Set The Stencil Buffer To 1 Where Draw Any Polygon		this to the shader
 		glClear(GL_STENCIL_BUFFER_BIT ) -- set stencil buffer to 0
 
@@ -165,8 +178,22 @@ function widget:DrawWorldPreUnit()
 	end
 end
 
+if mapHasWater then
+	function widget:DrawWorld()
+		DrawSelections(selectionVBOAir, true)
+	end
+end
+
+function widget:DrawWorldPreUnit()
+	DrawSelections(selectionVBOGround, false)
+end
+
 local function RemovePrimitive(unitID)
-	if selectionVBO.instanceIDtoIndex[unitID] then
+	local selectionVBO
+	if selectionVBOGround.instanceIDtoIndex[unitID] then selectionVBO =  selectionVBOGround end
+	if selectionVBOAir.instanceIDtoIndex[unitID] then selectionVBO =  selectionVBOAir end
+
+	if selectionVBO and selectionVBO.instanceIDtoIndex[unitID] then
 		if selectionHighlight then
 			unitBufferUniformCache[1] = 0
 			if Spring.ValidUnitID(unitID) then
@@ -184,6 +211,7 @@ end
 
 local lastMouseOverUnitID = nil
 local lastMouseOverFeatureID = nil
+local cleanedForHiddenUI = false
 
 local function ClearLastMouseOver()
 	if lastMouseOverUnitID then
@@ -203,6 +231,27 @@ end
 
 
 function widget:Update(dt)
+	-- Handle UI visibility: clear selections when hidden, resync on show
+	if Spring.IsGUIHidden() then
+		if not cleanedForHiddenUI then
+			ClearLastMouseOver()
+			for unitID, _ in pairs(selUnits) do
+				RemovePrimitive(unitID)
+			end
+			-- Reset drawn selection state so we can rebuild when UI becomes visible
+			selUnits = {}
+			cleanedForHiddenUI = true
+		end
+		-- Skip further processing while UI is hidden
+		return
+	else
+		-- UI just became visible again, trigger a resync to redraw selections
+		if cleanedForHiddenUI then
+			updateSelection = true
+			cleanedForHiddenUI = false
+		end
+	end
+
 	if updateSelection then
 		selectedUnits = Spring.GetSelectedUnits()
 		updateSelection = false
@@ -287,9 +336,18 @@ local function init()
 	shaderConfig.TEAMCOLORIZATION = teamcolorOpacity	-- not implemented, doing it via POST_SHADING below instead
 	shaderConfig.HEIGHTOFFSET = 4
 	shaderConfig.POST_SHADING = "fragColor.rgba = vec4(mix(g_color.rgb * texcolor.rgb + addRadius, vec3(1.0), "..(1-teamcolorOpacity)..") , texcolor.a * TRANSPARENCY + addRadius);"
-	selectionVBO, selectShader = InitDrawPrimitiveAtUnit(shaderConfig, "selectedUnits")
+	selectionVBOGround, selectShader = InitDrawPrimitiveAtUnit(shaderConfig, "selectedUnitsGround")
+	if mapHasWater then
+		selectionVBOAir = InitDrawPrimitiveAtUnit(shaderConfig, "selectedUnitsAir")
+	else
+		selectionVBOAir = selectionVBOGround
+	end
 	ClearLastMouseOver()
-	if selectionVBO == nil then
+	if selectionVBOGround == nil then
+		widgetHandler:RemoveWidget()
+		return false
+	end
+	if selectionVBOAir == nil then
 		widgetHandler:RemoveWidget()
 		return false
 	end

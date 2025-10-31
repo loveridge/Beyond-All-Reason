@@ -96,7 +96,7 @@ customDefs.armjuno = {
 			commandfire = true,
 			customparams = {
 				scavforcecommandfire = true,
-				stockpileLimit = 1,
+				stockpilelimit = 1,
 			},
 		},
 	},
@@ -112,7 +112,7 @@ customDefs.corjuno = {
 			commandfire = true,
 			customparams = {
 				scavforcecommandfire = true,
-				stockpileLimit = 1,
+				stockpilelimit = 1,
 			},
 		},
 	},
@@ -1148,7 +1148,7 @@ customDefs.legkam = {
 -- 	},
 -- }
 
--- -- Custom ARM ambusher - NO cloak since looks weird/ugly atm
+-- -- Custom ARMADA ambusher - NO cloak since looks weird/ugly atm
 -- customDefs.armamb = {
 -- 	-- cancloak = false,
 -- 	-- stealth = true,

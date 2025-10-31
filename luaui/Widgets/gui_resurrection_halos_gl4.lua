@@ -1,3 +1,5 @@
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
    return {
       name      = "Resurrection Halos GL4",
@@ -12,7 +14,13 @@ end
 
 local resurrectionHalosVBO = nil
 local resurrectionHalosShader = nil
-local luaShaderDir = "LuaUI/Widgets/Include/"
+local luaShaderDir = "LuaUI/Include/"
+
+local InstanceVBOTable = gl.InstanceVBOTable
+
+local pushElementInstance = InstanceVBOTable.pushElementInstance
+local popElementInstance  = InstanceVBOTable.popElementInstance
+
 local texture = 'LuaUI/Images/halo.dds'
 local chobbyInterface
 
@@ -56,7 +64,8 @@ end
 
 
 function widget:VisibleUnitAdded(unitID, unitDefID, unitTeam)
-	if unitConf[unitDefID] == nil or Spring.GetUnitRulesParam(unitID, "resurrected") == nil then return end
+	local rezRulesParam = Spring.GetUnitRulesParam(unitID, "resurrected")
+	if unitConf[unitDefID] == nil or not rezRulesParam or rezRulesParam == 0 then return end
 
 	local gf = Spring.GetGameFrame()
 	pushElementInstance(
@@ -77,7 +86,7 @@ function widget:VisibleUnitAdded(unitID, unitDefID, unitTeam)
 end
 
 function widget:VisibleUnitsChanged(extVisibleUnits, extNumVisibleUnits)
-	clearInstanceTable(resurrectionHalosVBO)
+	InstanceVBOTable.clearInstanceTable(resurrectionHalosVBO)
 	for unitID, unitDefID in pairs(extVisibleUnits) do
 		widget:VisibleUnitAdded(unitID, unitDefID, Spring.GetUnitTeam(unitID))
 	end

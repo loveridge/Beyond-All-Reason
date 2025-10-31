@@ -115,7 +115,7 @@ return {
 				explosiongenerator = "custom:genericshellexplosion-large-bomb",
 				firestarter = 100,
 				flighttime = 12,
-				impulsefactor = 0.2,
+				impulsefactor = 0.8,
 				metalpershot = 0,
 				model = "corvrocket.s3o",
 				name = "Rocket",
@@ -140,6 +140,10 @@ return {
 				weapontimer = 3,
 				weapontype = "StarburstLauncher",
 				weaponvelocity = 415,
+				customparams = {
+					overrange_distance = 1507,
+					projectile_destruction_method = "descend",
+				},
 				damage = {
 					commanders = 810,
 					default = 1700,

@@ -1,3 +1,5 @@
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name = "Share Unit Command",
@@ -68,14 +70,6 @@ local max = math.max
 
 local defaultColor
 
-local vsx, vsy = GetViewGeometry()
-local fontfile = "fonts/" .. Spring.GetConfigString("bar_font2", "Exo2-SemiBold.otf")
-local fontfileScale = (0.5 + (vsx * vsy / 5700000))
-local fontfileSize = 50
-local fontfileOutlineSize = 8.5
-local fontfileOutlineStrength = 10
-local font = gl.LoadFont(fontfile, fontfileSize * fontfileScale, fontfileOutlineSize * fontfileScale, fontfileOutlineStrength)
-
 local cmdQuickShareToTargetId = 455624
 local myTeamID = GetMyTeamID()
 local myAllyTeamID = GetTeamAllyTeamID(myTeamID)
@@ -130,7 +124,11 @@ local function getMouseTargetPosition()
 			return mouseTarget[1], mouseTarget[2], mouseTarget[3]
 		elseif mouseTargetType == "unit" then
 			local _, coordinates = TraceScreenRay(mx, my, true)
-			return coordinates[1], coordinates[2], coordinates[3], mouseTarget
+			if coordinates then
+				return coordinates[1], coordinates[2], coordinates[3], mouseTarget
+			else
+				return nil, nil, nil, mouseTarget
+			end
 		elseif mouseTargetType == "feature" then
 			local _, coordinates = TraceScreenRay(mx, my, true)
 			if coordinates then
@@ -241,7 +239,7 @@ local function findTeamInArea(mx, my)
 		return nil
 	end
 
-	local foundUnits = GetUnitsInCylinder(cUnitID[1], cUnitID[3], range)
+	local foundUnits = GetUnitsInCylinder(cUnitID[1], cUnitID[3], range, -3)
 
 	if #foundUnits < 1 then
 		return nil
@@ -251,7 +249,7 @@ local function findTeamInArea(mx, my)
 
 	for _, unitId in ipairs(foundUnits) do
 		local unitTeamId = GetUnitTeam(unitId)
-		if isAlly(unitTeamId) then
+		if unitTeamId ~= myTeamID then
 			unitTeamId = tostring(unitTeamId)
 			if unitTeamCounters[unitTeamId] == nil then
 				unitTeamCounters[unitTeamId] = 1
@@ -285,7 +283,7 @@ local function getSelectedTeam()
 
 	local tx, ty, tz, targetUnitID = getMouseTargetPosition()
 
-	if (not tx) then
+	if (not tx and not targetUnitID) then
 		return nil
 	end
 
@@ -367,20 +365,16 @@ function widget:CommandsChanged()
 	end
 end
 
+function widget:ViewResize(vsx, vsy)
+	font = WG['fonts'].getFont(2, 1.5)
+end
+
 function widget:Initialize()
+	widget:ViewResize()
 	defaultColor = { 0.88, 0.88, 0.88, 1 }
 	setupDisplayLists()
 end
 
 function widget:Shutdown()
 	deleteDisplayLists()
-end
-
-function widget:ViewResize()
-	vsx, vsy = Spring.GetViewGeometry()
-	local newFontfileScale = (0.5 + (vsx * vsy / 5700000))
-	if fontfileScale ~= newFontfileScale then
-		fontfileScale = newFontfileScale
-		font = gl.LoadFont(fontfile, fontfileSize * fontfileScale, fontfileOutlineSize * fontfileScale, fontfileOutlineStrength)
-	end
 end

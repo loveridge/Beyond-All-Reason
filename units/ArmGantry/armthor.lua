@@ -143,12 +143,14 @@ return {
 				soundhitwet = "sizzle",
 				soundstart = "hackshot",
 				soundtrigger = 1,
-				targetmoveerror = 0,
 				thickness = 1.2,
 				tolerance = 1820,
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 800,
+				customparams = {
+					noattackrangearc = 1,
+				},
 				damage = {
 					default = 300,
 				},
@@ -194,6 +196,9 @@ return {
 				weapontimer = 2.5,
 				weapontype = "StarburstLauncher",
 				weaponvelocity = 500,
+				customparams = {
+					stockpilelimit = 2,
+				},
 				damage = {
 					default = 80000,
 				},
@@ -226,12 +231,12 @@ return {
 				soundhitwet = "sizzle",
 				soundstart = "lghthvy1",
 				soundtrigger = true,
-				targetmoveerror = 0,
 				thickness = 1.8,
 				turret = true,
 				weapontype = "LightningCannon",
 				weaponvelocity = 400,
 				customparams = {
+					noattackrangearc = 1,
 					spark_ceg = "genericshellexplosion-splash-large-lightning",
 					spark_forkdamage = "0.25",
 					spark_maxunits = "5",

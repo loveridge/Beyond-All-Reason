@@ -30,7 +30,7 @@ return {
 		maxwaterdepth = 0,
 		movementclass = "NANO",
 		objectname = "Units/LEGNANOTC.s3o",
-		script = "Units/CORNANOTC.cob",
+		script = "Units/LEGNANOTC.cob",
 		seismicsignature = 0,
 		selfdestructas = "nanoselfd",
 		sightdistance = 380,
@@ -40,7 +40,7 @@ return {
 		workertime = 200,
 		customparams = {
 			usebuildinggrounddecal = true,
-			buildinggrounddecaltype = "decals/cornanotc_aoplane.dds",
+			buildinggrounddecaltype = "decals/legnanotc_aoplane.dds",
 			buildinggrounddecalsizey = 5,
 			buildinggrounddecalsizex = 5,
 			buildinggrounddecaldecayspeed = 30,

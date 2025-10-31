@@ -80,7 +80,7 @@ return {
 			},
 		},
 		weapondefs = {
-		
+
 			kmaw = { -- fire based with trailing AoE on particles (or not, atm)
 				accuracy = 0,
 				areaofeffect = 128,
@@ -121,19 +121,21 @@ return {
 				waterweapon = false,
 				weapontype = "Flame",
 				weaponvelocity = 500,
+				customparams = {
+					noattackrangearc = 1,
+				},
 				damage = {
-					default = 40,--100,
+					default = 40,
 					subs = 10,
-				}--,customparams = { single_hit_multi = 'true' },
+				}
 			},
-		
+
 			edragon_missile = {
-			
 				areaofeffect = 16,
 				avoidfeature = false,
 				burnblow = true,
 				canattackground = false,
-				cegtag = "missiletrailaa-large",
+				cegtag = "missiletrailaa-medium",
 				craterareaofeffect = 0,
 				craterboost = 0,
 				cratermult = 0,
@@ -173,7 +175,7 @@ return {
 					bombers = 400,
 					fighters = 400,
 					vtol = 400,
-				},			
+				},
 			},
 			krowbosslaser = {
 				areaofeffect = 8,
@@ -199,7 +201,7 @@ return {
 				rgbcolor = "0 1 0",
 				soundhitdry = "",
 				soundhitwet = "sizzle",
-				soundstart = "lasrhvy2",
+				soundstart = "lasrhvy3",
 				soundtrigger = 1,
 				targetmoveerror = 0.3,
 				thickness = 4,
@@ -207,6 +209,9 @@ return {
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 800,
+				customparams = {
+					noattackrangearc = 1,
+				},
 				damage = {
 					commanders = 200,
 					default = 2000,
@@ -241,12 +246,14 @@ return {
 				soundstart = "lasrhvy3",
 				soundstartvolume = 35,
 				soundtrigger = 1,
-				targetmoveerror = 0.15,
 				thickness = 6.7,
 				tolerance = 10000,
 				turret = true,
 				weapontype = "BeamLaser",
 				weaponvelocity = 800,
+				customparams = {
+					noattackrangearc = 1,
+				},
 				damage = {
 					commanders = 500,
 					default = 5000,

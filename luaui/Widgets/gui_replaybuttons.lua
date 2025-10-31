@@ -1,4 +1,6 @@
 --http://springrts.com/phpbb/viewtopic.php?f=23&t=30560
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
 	return {
 		name = "Replay buttons",
@@ -11,8 +13,6 @@ function widget:GetInfo()
 		enabled = true,
 	}
 end
-
-local fontfile2 = "fonts/" .. Spring.GetConfigString("bar_font2", "Exo2-SemiBold.otf")
 
 local vsx, vsy = Spring.GetViewGeometry()
 
@@ -28,7 +28,8 @@ local buttons = {}
 local speeds = { 0.5, 1, 2, 3, 4, 6, 8, 10, 15, 20 }
 local wPos = { x = 0.00, y = 0.145 }
 local isPaused = false
-local isActive = true --is the widget shown and reacts to clicks?
+local isActive = false
+local prevIsActive = false
 local sceduleUpdate = true
 local widgetScale = (0.5 + (vsx * vsy / 5700000))
 
@@ -99,7 +100,7 @@ function widget:ViewResize()
 	RectRound = WG.FlowUI.Draw.RectRound
 	UiButton = WG.FlowUI.Draw.Button
 
-	font = WG['fonts'].getFont(fontfile2)
+	font = WG['fonts'].getFont(2, 1.6)
 end
 
 function widget:Initialize()
@@ -128,32 +129,33 @@ end
 
 
 function widget:DrawScreen()
-	if WG['guishader'] then
-		if isActive then
-			local dy = (#speeds + 1) * bHeight
-
-			if backgroundGuishader then
-				gl.DeleteList(backgroundGuishader)
-			end
-			backgroundGuishader = gl.CreateList(function()
-				RectRound(math.floor((wPos.x * vsx) + 0.5), math.floor((wPos.y * vsy) + 0.5), math.floor(((wPos.x + bWidth) * vsx) + 0.5),  math.floor(((wPos.y + dy) * vsy) + 0.5), elementCorner, 0, 1, 1, 0)
-			end)
-			WG['guishader'].InsertDlist(backgroundGuishader, 'replaybuttons')
-		else
-			WG['guishader'].DeleteDlist('replaybuttons')
-		end
-	end
-
 	if not isActive then
+		if WG['guishader'] and prevIsActive ~= isActive then
+			WG['guishader'].RemoveDlist('replaybuttons')
+		end
 		return
 	end
+
 	if sceduleUpdate then
+		sceduleUpdate = false
 		if buttonsList then
 			gl.DeleteList(buttonsList)
 		end
 		buttonsList = gl.CreateList(draw_buttons, buttons)
-		sceduleUpdate = false
+
+		local dy = (#speeds + 1) * bHeight
+		if backgroundGuishader then
+			gl.DeleteList(backgroundGuishader)
+		end
+		backgroundGuishader = gl.CreateList(function()
+			RectRound(math.floor((wPos.x * vsx) + 0.5), math.floor((wPos.y * vsy) + 0.5), math.floor(((wPos.x + bWidth) * vsx) + 0.5),  math.floor(((wPos.y + dy) * vsy) + 0.5), elementCorner, 0, 1, 1, 0)
+		end)
 	end
+	
+	if WG['guishader'] and isActive and prevIsActive ~= isActive then
+		WG['guishader'].InsertDlist(backgroundGuishader, 'replaybuttons')
+	end
+
 	if buttonsList then
 		gl.CallList(buttonsList)
 	end
@@ -205,6 +207,7 @@ function widget:MousePress(x, y, button)
 end
 
 function widget:Update(dt)
+	prevIsActive = isActive
 	isActive = #Spring.GetSelectedUnits() == 0
 end
 

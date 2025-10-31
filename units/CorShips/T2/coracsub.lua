@@ -6,7 +6,7 @@ return {
 		buildtime = 18000,
 		canmove = true,
 		collisionvolumeoffsets = "0 0 4",
-		collisionvolumescales = "38 9 72",
+		collisionvolumescales = "40 25 74",
 		collisionvolumetype = "box",
 		corpse = "DEAD",
 		energycost = 9000,
@@ -51,7 +51,6 @@ return {
 			[12] = "corenaa",
 			[13] = "corfdoom",
 			[14] = "coruwageo",
-			[15] = "corfasp",
 		},
 		customparams = {
 			model_author = "Beherith",

@@ -29,7 +29,7 @@ return {
 		seismicsignature = 0,
 		selfdestructas = "hugeExplosionGenericSelfd",
 		sightdistance = 500,
-		speed = 235,
+		speed = 200,
 		transportcapacity = 1,
 		transportsize = 4,
 		transportunloadmethod = 0,
@@ -38,6 +38,7 @@ return {
 		unloadspread = 0,
 		upright = true,
 		customparams = {
+			crashable = 0,
 			model_author = "Mr Bob",
 			normaltex = "unittextures/cor_normal.dds",
 			paralyzemultiplier = 0,

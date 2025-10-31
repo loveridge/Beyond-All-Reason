@@ -143,6 +143,8 @@ return {
 				customparams = {
 					lups_noshockwave = 1,
 					nofire = true,
+					stockpilelimit = 20,
+					water_splash = 0,
 				},
 				damage = {
 					default = 1,

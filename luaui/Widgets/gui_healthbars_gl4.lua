@@ -1,3 +1,5 @@
+local widget = widget ---@type Widget
+
 function widget:GetInfo()
    return {
       name      = "Health Bars GL4",
@@ -314,10 +316,10 @@ local barTypeMap = { -- WHERE SHOULD WE STORE THE FUCKING COLORS?
 	},
 }
 
-for barname, bt in pairs(barTypeMap) do 
+for barname, bt in pairs(barTypeMap) do
 	local cache = {}
-	for i=1,20 do cache[i] = 0 end 
-	
+	for i=1,20 do cache[i] = 0 end
+
 	--cache[1] = unitDefHeights[unitDefID] + additionalheightaboveunit * effectiveScale  -- height
 	--cache[2] = effectiveScale
 	--cache[3] = 0.0 -- unused
@@ -336,7 +338,7 @@ for barname, bt in pairs(barTypeMap) do
 	cache[14] = bt.maxcolor[2]
 	cache[15] = bt.maxcolor[3]
 	cache[16] = bt.maxcolor[4]
-	
+
 	bt['cache'] = cache
 end
 
@@ -345,9 +347,7 @@ end
 --------------------------------------------------------------------------------
 
 local spec, fullview = Spring.GetSpectatingState()
-local myTeamID = Spring.GetMyTeamID()
 local myAllyTeamID = Spring.GetMyAllyTeamID()
-local myPlayerID = Spring.GetMyPlayerID()
 local GetUnitWeaponState = Spring.GetUnitWeaponState
 
 local chobbyInterface
@@ -393,9 +393,12 @@ local variableBarSizes = true -- Option 'healthbarsvariable'
 local healthBarVBO = nil
 local healthBarShader = nil
 
-local luaShaderDir = "LuaUI/Widgets/Include/"
-local LuaShader = VFS.Include(luaShaderDir.."LuaShader.lua")
-VFS.Include(luaShaderDir.."instancevbotable.lua")
+local LuaShader = gl.LuaShader
+local InstanceVBOTable = gl.InstanceVBOTable
+
+--local uploadAllElements   = InstanceVBOTable.uploadAllElements
+local pushElementInstance = InstanceVBOTable.pushElementInstance
+local popElementInstance  = InstanceVBOTable.popElementInstance
 
 -------------------- configurables -----------------------
 local additionalheightaboveunit = 24 --16?
@@ -438,9 +441,9 @@ if debugmode then
 	shaderConfig.DEBUGSHOW = 1 -- comment this to always show all bars
 end
 
-local vsSrcPath = "LuaUI/Widgets/Shaders/HealthbarsGL4.vert.glsl"
-local gsSrcPath = "LuaUI/Widgets/Shaders/HealthbarsGL4.geom.glsl"
-local fsSrcPath = "LuaUI/Widgets/Shaders/HealthbarsGL4.frag.glsl"
+local vsSrcPath = "LuaUI/Shaders/HealthbarsGL4.vert.glsl"
+local gsSrcPath = "LuaUI/Shaders/HealthbarsGL4.geom.glsl"
+local fsSrcPath = "LuaUI/Shaders/HealthbarsGL4.frag.glsl"
 
 local shaderSourceCache = {
 		vssrcpath = vsSrcPath,
@@ -458,7 +461,7 @@ local shaderSourceCache = {
 			skipGlyphsNumbers = 0.0,
 			globalSizeMult = 1.0,
 		  },
-		shaderConfig = shaderConfig,		  
+		shaderConfig = shaderConfig,
 	}
 
 
@@ -513,7 +516,7 @@ end
 
 local function initializeInstanceVBOTable(myName, usesFeatures)
 	local newVBOTable
-	newVBOTable = makeInstanceVBOTable(
+	newVBOTable = InstanceVBOTable.makeInstanceVBOTable(
 		{
 			{id = 0, name = 'height_timers', size = 4},
 			{id = 1, name = 'type_index_ssboloc', size = 4, type = GL.UNSIGNED_INT},
@@ -565,7 +568,6 @@ local function addBarForUnit(unitID, unitDefID, barname, reason)
 	-- debug units are not present in unittracker api!
 	if (unitDefID == nil) or unitDefIgnore[unitDefID] then return nil end
 
-	local gf = Spring.GetGameFrame()
 	local bt = barTypeMap[barname]
 	--if cnt == 1 then bt = barTypeMap.building end
 	--if cnt == 2 then bt = barTypeMap.reload end
@@ -602,13 +604,13 @@ local function addBarForUnit(unitID, unitDefID, barname, reason)
 	--end -- to keep these on top
 
 	local effectiveScale = ((variableBarSizes and unitDefSizeMultipliers[unitDefID]) or 1.0) * barScale
-	
+
 	local healthBarTableCache = bt.cache
 
 	healthBarTableCache[1] = unitDefHeights[unitDefID] + additionalheightaboveunit * effectiveScale  -- height
 	healthBarTableCache[2] = effectiveScale
 	healthBarTableCache[6] = unitBars[unitID] - 1   -- bar index (how manyeth per unit)
-	
+
 	return pushElementInstance(
 		healthBarVBO, -- push into this Instance VBO Table
 		healthBarTableCache,
@@ -692,7 +694,7 @@ local function addBarsForUnit(unitID, unitDefID, unitTeam, unitAllyTeam, reason)
 			-- moved to CUS gl4
 			--uniformcache[1] = build
 			--unitBeingBuiltWatch[unitID] = build
-			--gl.SetUnitBufferUniforms(unitID, uniformcache, 0) 
+			--gl.SetUnitBufferUniforms(unitID, uniformcache, 0)
 			--uniformcache[1] = Spring.GetUnitHeight(unitID)
 			--gl.SetUnitBufferUniforms(unitID, uniformcache, 11)
 		else
@@ -813,7 +815,7 @@ end
 
 
 local function init()
-	clearInstanceTable(healthBarVBO)
+	InstanceVBOTable.clearInstanceTable(healthBarVBO)
 	unitEmpWatch = {}
 	--unitBeingBuiltWatch = {}
 	unitCaptureWatch = {}
@@ -842,10 +844,9 @@ local function init()
 end
 
 local function initfeaturebars()
-	clearInstanceTable(featureHealthVBO)
-	clearInstanceTable(featureResurrectVBO)
-	clearInstanceTable(featureReclaimVBO)
-	local gameFrame = Spring.GetGameFrame()
+	InstanceVBOTable.clearInstanceTable(featureHealthVBO)
+	InstanceVBOTable.clearInstanceTable(featureResurrectVBO)
+	InstanceVBOTable.clearInstanceTable(featureReclaimVBO)
 	for i, featureID in ipairs(Spring.GetAllFeatures()) do
 		local featureDefID = Spring.GetFeatureDefID(featureID)
 		--local resurrectname = Spring.GetFeatureResurrect(featureID)
@@ -948,6 +949,17 @@ function widget:Initialize()
 		init()
 		initfeaturebars()
 	end
+	WG['healthbars'].getHeight = function()
+		return barHeight
+	end
+	WG['healthbars'].setHeight = function(value)
+		barHeight = value
+		shaderSourceCache.shaderConfig.BARHEIGHT = barHeight
+		shaderSourceCache.shaderConfig.BARCORNER = 0.06 + (shaderConfig.BARHEIGHT / 9)
+		shaderSourceCache.shaderConfig.SMALLERCORNER = shaderConfig.BARCORNER * 0.6
+		init()
+		initfeaturebars()
+	end
 	WG['healthbars'].getVariableSizes = function()
 		return variableBarSizes
 	end
@@ -989,58 +1001,16 @@ function widget:RecvLuaMsg(msg, playerID)
 	end
 end
 
---[[
-function widget:UnitCreated(unitID, unitDefID, teamID)
-	addBarsForUnit(unitID, unitDefID, teamID, nil, 'UnitCreated')
-end
-
-function widget:UnitDestroyed(unitID, unitDefID, teamID)
-	if debugmode then Spring.Echo("HBGL4:UnitDestroyed",unitID, unitDefID, teamID) end
-	removeBarsFromUnit(unitID,'UnitDestroyed')
-end
-
-function widget:UnitFinished(unitID, unitDefID, teamID) -- reset bars on construction complete?
-	widget:UnitDestroyed(unitID, unitDefID, teamID)
-	widget:UnitCreated(unitID, unitDefID, teamID)
-end
-
-function widget:UnitEnteredLos(unitID, unitTeam, allyTeam, unitDefID) -- this is still called when in spectator mode :D
-	if not fullview then addBarsForUnit(unitID, Spring.GetUnitDefID(unitID), unitTeam, nil, 'UnitEnteredLos') end
-end
-
-function widget:UnitLeftLos(unitID, unitTeam, allyTeam, unitDefID)
-	if spec and fullview then return end -- Interesting bug: if we change to spec with /spectator 1, then we receive unitLeftLos callins afterwards :P
-	removeBarsFromUnit(unitID, 'UnitLeftLos')
-end
-
-
-function widget:UnitTaken(unitID, unitDefID, oldTeamID, newTeamID)
-	local newAllyTeamID = select( 6, Spring.GetTeamInfo(newTeamID))
-
-	if debugmode then
-		Spring.Echo("widget:UnitTaken",unitID, unitDefID, oldTeamID, newTeamID, Spring.GetUnitAllyTeam(unitID),newAllyTeamID)
-	end
-
-	removeBarsFromUnit(unitID,'UnitTaken') -- because taken units dont actually call unitleftlos :D
-	if newAllyTeamID == myAllyTeamID then  -- but taken units, that we see being taken trigger unitenteredlos  on the same frame
-		addBarsForUnit(unitID, unitDefID, newTeamID, newAllyTeamID, 'UnitTaken')
-	end
-end
-
-function widget:UnitGiven(unitID, unitDefID, newTeamID)
-	--Spring.Echo("widget:UnitGiven",unitID, unitDefID, newTeamID)
-	removeBarsFromUnit(unitID, 'UnitGiven')
-	addBarsForUnit(unitID, unitDefID, newTeamID, nil,  'UnitTaken')
-end
-]]--
-
-
 function widget:VisibleUnitAdded(unitID, unitDefID, unitTeam)
 	addBarsForUnit(unitID, unitDefID, unitTeam, nil, 'VisibleUnitAdded')
 end
 
 function widget:VisibleUnitRemoved(unitID)
 	removeBarsFromUnit(unitID, 'VisibleUnitRemoved')
+end
+
+function widget:CrashingAircraft(unitID, unitDefID, teamID)
+	removeBarsFromUnit(unitID,'CrashingAircraft')
 end
 
 function widget:VisibleUnitsChanged(extVisibleUnits, extNumVisibleUnits)
@@ -1053,12 +1023,10 @@ function widget:VisibleUnitsChanged(extVisibleUnits, extNumVisibleUnits)
 	unitStockPileWatch = {}
 	unitReloadWatch = {}
 	spec, fullview = Spring.GetSpectatingState()
-	myTeamID = Spring.GetMyTeamID()
 	myAllyTeamID = Spring.GetMyAllyTeamID()
-	myPlayerID = Spring.GetMyPlayerID()
 
 
-	clearInstanceTable(healthBarVBO) -- clear all instances
+	InstanceVBOTable.clearInstanceTable(healthBarVBO) -- clear all instances
 	for unitID, unitDefID in pairs(extVisibleUnits) do
 		addBarsForUnit(unitID, unitDefID, Spring.GetUnitTeam(unitID), nil, "VisibleUnitsChanged") -- TODO: add them with noUpload = true
 	end
@@ -1079,7 +1047,6 @@ function widget:PlayerChanged(playerID)
 	if (currentspec ~= spec) or -- we transition from spec to player, yes this is needed
 		(currentfullview ~= fullview) or -- we turn on or off fullview
 		((currentAllyTeamID ~= myAllyTeamID) and not currentfullview)  -- our ALLYteam changes, and we are not in fullview
-		--((currentTeamID ~= myTeamID) and not currentfullview)
 
 		then
 		-- do the actual reinit stuff, but first change my own
@@ -1091,8 +1058,6 @@ function widget:PlayerChanged(playerID)
 	spec = currentspec
 	fullview = currentfullview
 	myAllyTeamID = currentAllyTeamID
-	myTeamID = currentTeamID
-	myPlayerID = currentPlayerID
 	--if reinit then init() end
 end
 
@@ -1100,8 +1065,8 @@ end
 function widget:GameFrame(n)
 
 	if debugmode then
-		locateInvalidUnits(healthBarVBO)
-		locateInvalidUnits(featureHealthVBO)
+		InstanceVBOTable.locateInvalidUnits(healthBarVBO)
+		InstanceVBOTable.locateInvalidUnits(featureHealthVBO)
 	end
 	-- Units:
 	-- check shields
@@ -1146,7 +1111,7 @@ function widget:GameFrame(n)
 				local health, maxHealth, paralyzeDamage, capture, build = Spring.GetUnitHealth(unitID)
 				--uniformcache[1] = math.floor((paralyzeDamage - maxHealth)) / (maxHealth * empDecline))
 				if paralyzeDamage then
-				
+
 					-- this returns something like 1.20 which somehow turns into seconds somewhere unsearchable, currently wrong display
 					-- this needs conditional fixing within an if Spring.GetModOptions().emprework
 					uniformcache[1] = paralyzeDamage / maxHealth
@@ -1163,28 +1128,6 @@ function widget:GameFrame(n)
 			end
 		end
 	end
-
-	-- check build progress
-	--[[ -- DISABLED FOR CUS GL4 path
-	if (n % 1 == 0) then
-		for unitID, prevProgress in pairs(unitBeingBuiltWatch) do
-			local _, progress = Spring.GetUnitIsBeingBuilt(unitID)
-			if progress and progress ~= prevProgress then
-				uniformcache[1] = progress
-				--Spring.Echo("Health", health/maxHealth, build, math.abs(build - health/maxHealth))
-				--if math.abs(build - health/maxHealth) < 0.005 then uniformcache[1] = 1.0 end
-				gl.SetUnitBufferUniforms(unitID,uniformcache, 0)
-				unitBeingBuiltWatch[unitID] = progress
-				if progress == 1 then
-					removeBarFromUnit(unitID, "building", 'unitBeingBuiltWatch')
-					unitBeingBuiltWatch[unitID] = nil
-				else
-					unitBeingBuiltWatch[unitID] = 1.0
-				end
-			end
-		end
-	end
-	]]--
 
 	-- check capture progress?
 	if (n % 1) == 0 then
@@ -1269,7 +1212,6 @@ function widget:DrawWorld()
 	if chobbyInterface then return end
 	if not drawWhenGuiHidden and Spring.IsGUIHidden() then return end
 
-    local now = os.clock()
 	if Spring.GetGameFrame() % 90 == 0 then
 		--Spring.Echo("healthBarVBO",healthBarVBO.usedElements, "featureHealthVBO",featureHealthVBO.usedElements)
 	end

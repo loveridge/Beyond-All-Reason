@@ -25,7 +25,7 @@ return {
 		script = "Units/ARMATLAS.cob",
 		seismicsignature = 0,
 		selfdestructas = "mediumExplosionGenericSelfd",
-		sightdistance = 260,
+		sightdistance = 430,
 		speed = 207,
 		transportcapacity = 1,
 		transportmass = 750,
@@ -35,6 +35,7 @@ return {
 		turnrate = 550,
 		verticalspeed = 3.75,
 		customparams = {
+			crashable = 0,
 			model_author = "Flaka",
 			normaltex = "unittextures/Arm_normal.dds",
 			paralyzemultiplier = 0,

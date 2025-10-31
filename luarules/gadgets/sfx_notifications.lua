@@ -1,3 +1,5 @@
+local gadget = gadget ---@type Gadget
+
 function gadget:GetInfo()
     return {
         name      = "Notifications",
@@ -52,25 +54,17 @@ if gadgetHandler:IsSyncedCode() then
 			end
 		end
 	end
-	local nukesNames = {
-		armsilo_nuclear_missile = true,
-		corsilo_crblmssl = true,
-		armsilo_scav_nuclear_missile = true,
-		corsilo_scav_crblmssl = true,
-		raptor_turret_meteor_t4_v1_weapon = true,
-		--raptor_allterrain_arty_basic_t4_v1_meteorlauncher = true,
-	}
-	-- convert weaponname -> weaponDefID
-	local nukes = {}
-	for name, params in pairs(nukesNames) do
-		if WeaponDefNames[name] then
-			nukes[WeaponDefNames[name].id] = params
+	local nukeWeapons = {}
+	for id, def in pairs(WeaponDefs) do
+		if def.targetable and def.targetable == 1 then
+			if def.name ~= "raptor_allterrain_arty_basic_t4_v1_meteorlauncher" then	-- to not drive them mad
+				nukeWeapons[id] = true
+			end
 		end
 	end
-	nukesNames = nil
 
 	function gadget:Initialize()
-		for k,v in pairs(nukes) do
+		for k,v in pairs(nukeWeapons) do
 			Script.SetWatchProjectile(k, true)
 		end
 	end
@@ -81,7 +75,11 @@ if gadgetHandler:IsSyncedCode() then
 			local players = Spring.GetPlayerList(newTeam)
 			for ct, player in pairs (players) do
 				if tostring(player) then
-					SendToUnsynced("NotificationEvent", "UnitsReceived", tostring(player))
+					if GetAllyTeamID(newTeam) == GetAllyTeamID(oldTeam) then -- We got it from a teammate
+						SendToUnsynced("NotificationEvent", "UnitsReceived", tostring(player))
+					else  -- We got it from an enemy
+						SendToUnsynced("NotificationEvent", "UnitsCaptured", tostring(player))
+					end
 				end
 			end
 		end
@@ -89,8 +87,7 @@ if gadgetHandler:IsSyncedCode() then
 
 	-- NUKE LAUNCH send to all but ally team
 	function gadget:ProjectileCreated(proID, proOwnerID, weaponDefID)
-		local proDefID = Spring.GetProjectileDefID(proID)
-		if nukes[Spring.GetProjectileDefID(proID)] then
+		if nukeWeapons[Spring.GetProjectileDefID(proID)] then
 			local players = AllButAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(proOwnerID)))
 			for ct, player in pairs (players) do
 				if tostring(player) then
@@ -133,6 +130,8 @@ else
 	local isRadar = {}
 	local isMex = {}
 	local isLrpc = {}
+	local isBuilding = {}
+	local hasWeapons = {}
 	for unitDefID, unitDef in pairs(UnitDefs) do
 		-- not critter/raptor/object
 		if not string.find(unitDef.name, 'critter') and not string.find(unitDef.name, 'raptor') and (not unitDef.modCategories or not unitDef.modCategories.object) then
@@ -148,6 +147,10 @@ else
 			if unitDef.extractsMetal > 0 then
 				isMex[unitDefID] = unitDef.extractsMetal
 			end
+			if unitDef.weapons and #unitDef.weapons > 0 then
+				hasWeapons[unitDefID] = true
+			end
+			isBuilding[unitDefID] = unitDef.isBuilding or unitDef.isFactory
 		end
 	end
 
@@ -181,9 +184,14 @@ else
 		gadgetHandler:AddSyncAction("NotificationEvent", BroadcastEvent)
 	end
 
-	function BroadcastEvent(_,event, player)
-		if Script.LuaUI("NotificationEvent") and tonumber(player) and ((tonumber(player) == Spring.GetMyPlayerID()) or isSpec) then
-			Script.LuaUI.NotificationEvent(event.." "..player)
+	function BroadcastEvent(_,event, player, forceplay)
+		if Script.LuaUI("NotificationEvent") and (forceplay or (tonumber(player) and ((tonumber(player) == Spring.GetMyPlayerID()) or isSpec))) then
+			if forceplay then
+				forceplay = " y"
+			else
+				forceplay = ""
+			end
+			Script.LuaUI.NotificationEvent(event .. " " .. player .. forceplay)
 		end
 	end
 
@@ -194,16 +202,43 @@ else
 	end
 
 	local commanderLastDamaged = {}
+	local UnitLostNotifCooldown = 60
+	local UnitsUnderAttackNotifCooldown = 60
+	local BaseUnderAttackNotifCooldown = 60
 	function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
 		if unitTeam == myTeamID and isLrpc[attackerDefID] and attackerTeam and GetAllyTeamID(attackerTeam) ~= myAllyTeamID then
 			BroadcastEvent("NotificationEvent", 'LrpcTargetUnits', tostring(myPlayerID))
 		end
 		if isCommander[unitDefID] then
 			commanderLastDamaged[unitID] = Spring.GetGameFrame()
+		elseif unitTeam == myTeamID and attackerTeam and GetAllyTeamID(attackerTeam) ~= myAllyTeamID then
+			
+			if isBuilding[unitDefID] == false then
+				if UnitsUnderAttackNotifCooldown <= 0 then
+					BroadcastEvent("NotificationEvent", 'UnitsUnderAttack', tostring(myPlayerID))
+				end
+				UnitsUnderAttackNotifCooldown = 60
+			end
+			
+			
+			if isBuilding[unitDefID] == true and (not isMex[unitDefID]) and (not hasWeapons[unitDefID]) then
+				if BaseUnderAttackNotifCooldown <= 0 then
+					BroadcastEvent("NotificationEvent", 'BaseUnderAttack', tostring(myPlayerID))
+				end
+				BaseUnderAttackNotifCooldown = 60
+			end
 		end
 	end
 
-	function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
+	function gadget:GameFrame(frame)
+		if frame%30 == 15 then
+			UnitsUnderAttackNotifCooldown = UnitsUnderAttackNotifCooldown - 1
+			BaseUnderAttackNotifCooldown = BaseUnderAttackNotifCooldown - 1
+			UnitLostNotifCooldown = UnitLostNotifCooldown - 1
+		end
+	end
+
+	function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam, weaponDefID)
 		local unitInView = Spring.IsUnitInView(unitID)
 
 		-- if own and not killed by yourself
@@ -216,6 +251,12 @@ else
 				--local event = isMex[unitDefID] > 0.002 and 'T2MexLost' or 'MexLost'
 				local event = 'MexLost'
 				BroadcastEvent("NotificationEvent", event, tostring(myPlayerID))
+				return
+			elseif not isCommander[unitDefID] then
+				if UnitLostNotifCooldown <= 0 then
+					BroadcastEvent("NotificationEvent", "UnitLost", tostring(myPlayerID))
+				end
+				UnitLostNotifCooldown = 60
 				return
 			end
 		end
@@ -239,34 +280,61 @@ else
 					end
 				end
 			end
-			if numTeams > 1 and not playingAsHorde then
-				local players =  PlayersInAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
-				for ct, player in pairs (players) do
-					if tostring(player) then
-						if not unitInView then
-							if Spring.GetUnitRulesParam(unitID, "unit_evolved") then
+			if not isSpec then
+				if numTeams > 1 and not playingAsHorde then
+					local players =  PlayersInAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
+					for ct, player in pairs (players) do
+						if tostring(player) then
+							--if not unitInView then
+								if Spring.GetUnitRulesParam(unitID, "unit_evolved") then
 
-							elseif not attackerTeam and select(6, Spring.GetTeamInfo(unitTeam, false)) == myAllyTeamID and (not commanderLastDamaged[unitID] or commanderLastDamaged[unitID]+150 < Spring.GetGameFrame()) then
-								BroadcastEvent("NotificationEvent", "FriendlyCommanderSelfD", tostring(player))
-							else
-								BroadcastEvent("NotificationEvent", "FriendlyCommanderDied", tostring(player))
-							end
-						end
-						if enableLastcomNotif and allyComCount == 1 then
-							if myComCount == 1 then
-								BroadcastEvent("NotificationEvent", "YouHaveLastCommander", tostring(player))
-							else
-								BroadcastEvent("NotificationEvent", "TeamDownLastCommander", tostring(player))
+								elseif not attackerTeam and select(6, Spring.GetTeamInfo(unitTeam, false)) == myAllyTeamID and (not commanderLastDamaged[unitID] or commanderLastDamaged[unitID]+150 < Spring.GetGameFrame()) then
+									BroadcastEvent("NotificationEvent", "FriendlyCommanderSelfD", tostring(player))
+								else
+									BroadcastEvent("NotificationEvent", "FriendlyCommanderDied", tostring(player))
+								end
+							--end
+							if enableLastcomNotif and allyComCount == 1 then
+								if myComCount == 1 then
+									BroadcastEvent("NotificationEvent", "YouHaveLastCommander", tostring(player))
+								else
+									BroadcastEvent("NotificationEvent", "TeamDownLastCommander", tostring(player))
+								end
 							end
 						end
 					end
 				end
-			end
-			if not unitInView then
-				local players =  AllButAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
+				--if not unitInView then
+					local players =  AllButAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
+					for ct, player in pairs (players) do
+						if tostring(player) and not Spring.GetUnitRulesParam(unitID, "unit_evolved") then
+							BroadcastEvent("NotificationEvent", "EnemyCommanderDied", tostring(player))
+						end
+					end
+				--end
+			else
+				local players = PlayersInAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
 				for ct, player in pairs (players) do
-					if tostring(player) and not Spring.GetUnitRulesParam(unitID, "unit_evolved") then
-						BroadcastEvent("NotificationEvent", "EnemyCommanderDied", tostring(player))
+					if tostring(player) then
+						if Spring.GetUnitRulesParam(unitID, "unit_evolved") then
+
+						elseif not attackerTeam and (not commanderLastDamaged[unitID] or commanderLastDamaged[unitID]+150 < Spring.GetGameFrame()) then
+							BroadcastEvent("NotificationEvent", "SpectatorCommanderSelfD", tostring(player), true)
+						else
+							BroadcastEvent("NotificationEvent", "SpectatorCommanderDied", tostring(player), true)
+						end
+					end
+				end
+				local players = AllButAllyTeamID(GetAllyTeamID(Spring.GetUnitTeam(unitID)))
+				for ct, player in pairs (players) do
+					if tostring(player) then
+						if Spring.GetUnitRulesParam(unitID, "unit_evolved") then
+
+						elseif not attackerTeam and (not commanderLastDamaged[unitID] or commanderLastDamaged[unitID]+150 < Spring.GetGameFrame()) then
+							BroadcastEvent("NotificationEvent", "SpectatorCommanderSelfD", tostring(player), true)
+						else
+							BroadcastEvent("NotificationEvent", "SpectatorCommanderDied", tostring(player), true)
+						end
 					end
 				end
 			end

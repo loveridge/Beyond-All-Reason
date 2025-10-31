@@ -112,20 +112,47 @@ local options = {
         step   	= 1,  -- quantization is aligned to the def value, (step <= 0) means that there is no quantization
         section	= "options_main",
     },
+    {
+        key     = "deathmode",
+        name    = "Game End Mode",
+        desc    = "What it takes to eliminate a team",
+        type    = "list",
+        def     = "com",
+        section = "options_main",
+        items   = {
+            { key = "neverend", name = "Never ending",             desc = "Teams are never eliminated",                       lock = { "territorial_domination_config" } },
+            { key = "com",     name = "Kill all enemy Commanders", desc = "When a team has no Commanders left, it loses",     lock = { "territorial_domination_config" } },
+            --{ key= "territorial_domination",  name= "Territorial Domination",     desc="Teams race to capture territory against an ever-increasing quota to stay in the game. Commander retreat or death results in defeat.", unlock = {"territorial_domination_config"} },
+            { key = "builders", name = "Kill all Builders",        desc = "When a team has no builders left, it loses",       lock = { "territorial_domination_config" } },
+            { key = "killall", name = "Kill everything",           desc = "Every last unit must be eliminated, no exceptions!", lock = { "territorial_domination_config" } },
+            { key = "own_com", name = "Player resign on Com death", desc = "When player commander dies, you auto-resign.",    lock = { "territorial_domination_config" } },
+        }
+    },
+
+    --temporary, uncomment the added deathmode entry and delete entries related to temp_enable_territorial_domination once beta is over.
+    {
+        key     = "temp_enable_territorial_domination",
+        name    = "Territorial Domination V0.1",
+        desc    = "Enable experimental Territorial Domination gamemode",
+        hidden  = true,
+        type    = "bool",
+        section = "options_main",
+        unlock  = { "territorial_domination_config" },
+        def     = false,
+    },
 
     {
-        key		= "deathmode",
-        name	= "Game End Mode",
-        desc	= "What it takes to eliminate a team",
-        type	= "list",
-        def		= "com",
-        section	= "options_main",
-        items	= {
-            { key= "neverend", 	name= "Never ending", 				desc="Teams are never eliminated"},
-            { key= "com", 		name= "Kill all enemy Commanders", 	desc="When a team has no Commanders left, it loses"},
-            { key= "builders", 	name= "Kill all Builders",			desc="When a team has no builders left, it loses" },
-            { key= "killall", 	name= "Kill everything", 			desc="Every last unit must be eliminated, no exceptions!"},
-            { key= "own_com", 	name= "Player resign on Com death", desc="When player commander dies, you auto-resign."},
+        key     = "territorial_domination_config",
+        name    = "Territorial Domination Duration",
+        desc    =
+        "Configures the grace period and the amount of time in minutes it takes to reach the maximum required territory.",
+        type    = "list",
+        def     = "default",
+        section = "options_main",
+        items   = {
+            { key = "short",  name = "Short",  desc = "6 minutes grace period, 18 minute until the maximum territory is required" },
+            { key = "default", name = "Default", desc = "6 minutes grace period, 24 minute until the maximum territory is required" },
+            { key = "long",   name = "Long",   desc = "6 minutes grace period, 36 minute until the maximum territory is required" },
         }
     },
 
@@ -214,8 +241,12 @@ local options = {
 
     {
         key    	= "norushtimer",
-        name   	= "No Rush Time",
-        desc   	= "Set timer in which players cannot get out of their startbox, so you have time to prepare before fighting. PLEASE NOTE: For this to work, the game needs to have set startboxes. It won't work in FFA mode without boxes. Also, it does not affect Scavengers and Raptors.",
+        name   	= "No Rush Time".."\255\128\128\128".." [minutes]",
+        desc   	= "Set timer in which players cannot get out of their startbox, so you have time to prepare before fighting.\n"..
+			"PLEASE NOTE: For this to work, the game needs to have set startboxes.\n"..
+			-- tabs don't do much in chobby
+			"                          It won't work in FFA mode without boxes.\n"..
+			"                          Also, it does not affect Scavengers and Raptors.",
         type   	= "number",
         section	= "options_main",
         def    	= 0,
@@ -240,8 +271,7 @@ local options = {
 		key		= "tax_resource_sharing_amount",
 		name	= "Resource Sharing Tax",
 		desc	=	"Taxes resource sharing".."\255\128\128\128".." and overflow (engine TODO:)\n"..
-					"Set to [0] to turn off. Recommened: [0.4]. (Ranges: 0 - 0.99)\n"..
-					"*Disables: Reclaiming of Allied Units, [Unit Sharing] and [Assisting Ally Construction] to prevent loopholes",
+					"Set to [0] to turn off. Recommended: [0.4]. (Ranges: 0 - 0.99)",
 		type	= "number",
 		def		= 0,
 		min		= 0,
@@ -249,8 +279,6 @@ local options = {
 		step	= 0.01,
 		section	= "options_main",
 		column	= 1,
-		lock	= {"disable_unit_sharing","disable_assist_ally_construction"},
-		unlock	= {"disable_unit_sharing_forced","disable_assist_ally_construction_forced"},
 	},
 	{
 		key		= "disable_unit_sharing",
@@ -269,33 +297,6 @@ local options = {
 		def		=  false,
 		column	= 1.76,
 	},
-	{	key = "tax_padding", name = "", type = "subheader", section = "options_main", column = -3, },
-	{
-		key		= "disable_unit_sharing_forced",
-		--name	= "\255\252\191\76".."Disable Unit Sharing                              [Forced ON]",
-		name	= "\255\252\191\76".."Disable Unit Sharing                                                             Disable Assist Ally Construction",
-		type	= "subheader",
-		section	= "options_main",
-	},
-	{
-		key		= "disable_assist_ally_construction_forced",
-		--name	= "\255\252\191\76".."Disable Assist Ally Construction           [Forced ON]",
-		name	= "\255\252\191\76".."[■]                                                                          [■]",
-		type	= "subheader",
-		section	= "options_main",
-		column	= 1.505,
-		font	= 4,
-	},
-	{
-		key		= "unit_market",
-		name	= "Unit Market",
-		desc	= "Allow players to trade units. (Select unit, press 'For Sale' in order window or say /sell_unit in chat to mark the unit for sale. Double-click to buy from allies. T2cons show up in shop window!)",
-		type	= "bool",
-		def		= false,
-		section	= "options_main",
-	},
-
-
     {
         key     = "sub_header",
         section = "options_main",
@@ -630,6 +631,18 @@ local options = {
     },
 
     {
+        key		= "raptor_queen_count",
+        name	= "Raptor Queen Count",
+        desc	= "(Range: 1 - 100). Number of queens that will spawn.",
+        type	= "number",
+        def		= 1,
+        min		= 1,
+        max		= 100,
+        step	= 1,
+        section	= "raptor_defense_options",
+    },
+
+    {
         key		= "raptor_spawncountmult",
         name	= "Unit Spawn Per Wave Multiplier",
         desc	= "(Range: 1 - 5). How many times more raptors will spawn per wave.",
@@ -789,6 +802,18 @@ local options = {
     },
 
     {
+        key		= "scav_boss_count",
+        name	= "Scavengers Boss Count",
+        desc	= "(Range: 1 - 20). Number of bosses that will spawn.",
+        type	= "number",
+        def		= 1,
+        min		= 1,
+        max		= 20,
+        step	= 1,
+        section	= "scav_defense_options",
+    },
+
+    {
         key		= "scav_spawncountmult",
         name	= "Unit Spawn Per Wave Multiplier",
         desc	= "(Range: 1 - 5). How many times more scavs will spawn per wave.",
@@ -876,7 +901,16 @@ local options = {
     {
         key    	= "experimentalextraunits",
         name   	= "Extra Units Pack",
-        desc   	= "Formerly known as Scavenger units. Addon pack of units for Armada and Cortex, including various \"fun\" units",
+        desc   	= "Pack of units that didn't make it to the main game roster. Balanced for PvP",
+        type   	= "bool",
+        section = "options_extra",
+        def  	= false,
+    },
+
+    {
+        key    	= "scavunitsforplayers",
+        name   	= "Scavengers Units Pack",
+        desc   	= "Units made for Scavengers, mostly silly and unbalanced for PvP.",
         type   	= "bool",
         section = "options_extra",
         def  	= false,
@@ -908,14 +942,116 @@ local options = {
         type   	= "bool",
         def    	= false,
         section	= "options_extra",
+        unlock  = {"map_lavatiderhythm", "map_lavatidemode", "map_lavahighlevel", "map_lavahighdwell", "map_lavalowlevel", "map_lavalowdwell"},
+        lock    = {"sub_header_lava3", "sub_header_lava4"},
+        bitmask = 1,
     },
+
+    {
+        key    	= "map_lavatiderhythm",
+        name   	= "Lava Tides",
+        desc   	= "Lava level periodicially cycles height when tides are present",
+        type   	= "list",
+        def    	= "default",
+        section	= "options_extra",
+        column	= 1,
+        items	= {
+            { key= "default", 	name= "Default", desc= "Map Settings",
+                lock =
+                {"map_lavatidemode", "map_lavahighlevel", "map_lavahighdwell", "map_lavalowlevel", "map_lavalowdwell", "sub_header_lava3", "sub_header_lava4"},
+                unlock =
+                    { "sub_header_lava1", "sub_header_lava2"}},
+            { key= "enabled",	name= "Enable/Override",desc= "Lava tides will use these settings over the map defaults",
+                unlock =
+                {"map_lavatidemode", "map_lavahighlevel", "map_lavahighdwell", "map_lavalowlevel", "map_lavalowdwell", "sub_header_lava3", "sub_header_lava4"},
+                lock =
+                    { "sub_header_lava1", "sub_header_lava2"}},
+            { key= "disabled",	name= "Disable",desc= "Lava will not have tides, even on maps that normally have it",
+                lock =
+                {"map_lavatidemode", "map_lavahighlevel", "map_lavahighdwell", "map_lavalowlevel", "map_lavalowdwell", "sub_header_lava3", "sub_header_lava4"},
+                unlock =
+                    { "sub_header_lava1", "sub_header_lava2"}},
+        },
+        bitmask = 2,
+    },
+
+    {
+        key     = "map_lavatidemode",
+        name	= "Lava Start Position",
+        desc	= "Toggle whether lava starts at high or low tide",
+        hidden	= false,
+        type	= "list",
+        def		= "lavastartlow",
+        section	= "options_extra",
+        items	= {
+            { key= "lavastartlow", 	name= "Low", desc= "Lava starts at low tide" },
+            { key= "lavastarthigh",	name= "High",desc= "Lava starts at high tide" },
+        }
+    },
+
+    {
+        key 	= "map_lavahighlevel",
+        name 	= "Lava High Tide Level",
+        desc 	= "Lava level at high tide",
+        type 	= "number",
+        def 	= 0,
+        min 	= 0,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        column	= 1,
+    },
+
+    {
+        key 	= "map_lavahighdwell",
+        name 	= "Lava High Tide Time",
+        desc 	= "Time in seconds lava waits at high tide",
+        type 	= "number",
+        def 	= 60,
+        min 	= 1,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        column	= 2.0,
+    },
+
+    {
+        key 	= "map_lavalowlevel",
+        name 	= "Lava Low Tide Level",
+        desc 	= "Lava level at low tide",
+        type 	= "number",
+        def 	= 0,
+        min 	= 0,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        column	= 1,
+    },
+
+    {
+        key 	= "map_lavalowdwell",
+        name 	= "Lava Low Tide Time",
+        desc 	= "Time in seconds lava waits at low tide",
+        type 	= "number",
+        def 	= 300,
+        min 	= 1,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        column	= 2.0,
+    },
+
+    { key = "sub_header_lava1", section = "options_extra", type    = "subheader", name = "",},
+    { key = "sub_header_lava2", section = "options_extra", type    = "subheader", name = "",},
+    { key = "sub_header_lava3", section = "options_extra", type    = "subheader", name = "",},
+    { key = "sub_header_lava4", section = "options_extra", type    = "subheader", name = "",},
+
 
     {
         key     = "sub_header",
         section = "options_extra",
         type    = "separator",
     },
-
 
     {
         key 	= "ruins",
@@ -1002,7 +1138,6 @@ local options = {
         section = "options_extra",
         type    = "separator",
     },
-
 
     {
         key 	= "evocom",
@@ -1106,6 +1241,70 @@ local options = {
         type    = "separator",
     },
 
+    {
+        key 	= "quick_start",
+        name 	= "Quick Start",
+        desc   	= "Each player gets pre-game resources to spend on structures to be instantly spawned at the beginning of the game.",
+        type 	= "list",
+        def 	= "default",
+        section = "options_extra",
+        unlock = {"quick_start_amount"},
+        items 	= {
+            { key = "default", 	name = "Default", lock = {"quick_start_amount"}, desc = "Default settings for game modes." },
+            { key = "enabled", name = "Enabled", unlock = {"quick_start_amount"}, desc = "Quick Start alone, deducts 400 energy and 800 metal from starting resources." },
+            { key = "factory_discount", name = "Enabled: Discounted First Factory", desc =
+            "Quick Start The commander's first factory is discounted at any time. Deducts 400 energy and 800 metal from starting resources.", unlock = {"quick_start_amount"} },
+            { key = "factory_discount_only", name = "First Factory Discount Only", desc = "No base budget, only first factory discount. No deduction from starting resources.", lock = {"quick_start_amount"} },
+            { key = "disabled", name = "Disabled", desc = "Disabled quick start for all game modes.", lock = {"quick_start_amount"} },
+        }
+    },
+
+    {
+        key 	= "quick_start_amount",
+        name 	= "Quick Start Base Budget",
+        desc   	= "How much pre-game resources you have to spend on pre-queuing structures.",
+        type 	= "list",
+        def 	= "default",
+        section = "options_extra",
+        items 	= {
+            { key = "default", 	name = "Default", desc = "Uses the default amount based on game mode" },
+            { key = "small", 	name = "Small", desc = "1000 Base Budget" },
+            { key = "normal", 	name = "Normal", desc = "1500 Base Budget" },
+            { key = "large", 	name = "Large", desc = "3000 Base Budget" },
+        }
+    },
+
+    {
+        key 	= "override_quick_start_range",
+        name 	= "Override Quick Start Range",
+        desc   	= "Override the quick start build range. Set to 0 to use default behavior.",
+        type 	= "number",
+        def 	= 0,
+        min 	= 300,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        hidden 	= true,
+    },
+
+    {
+        key 	= "override_quick_start_resources",
+        name 	= "Override Quick Start Resources",
+        desc   	= "Override the quick start starting resources. Set to 0 to use default behavior.",
+        type 	= "number",
+        def 	= 0,
+        min 	= 100,
+        max 	= 10000,
+        step 	= 1,
+        section = "options_extra",
+        hidden 	= true,
+    },
+
+    {
+        key     = "sub_header",
+        section = "options_extra",
+        type    = "separator",
+    },
 
     {
         key 	= "assistdronesenabled", -- TODO, turn this into booleam modoption
@@ -1195,6 +1394,36 @@ local options = {
         step   	= 1,
     },
 
+    {
+        key     = "sub_header",
+        section = "options_extra",
+        type    = "separator",
+    },
+
+    {
+        key 	= "zombies",
+        name 	= "Scavenger Zombies",
+        type 	= "list",
+        def 	= "disabled",
+        section = "options_extra",
+        hidden  = false,
+        items 	= {
+            { key = "disabled", name = "Disabled", desc = "Disabled"},
+            { key = "normal", name = "Normal", desc = "Slow revival rate, normal strength."},
+            { key = "hard", name = "Hard", desc = "Fast revival rate, stronger Scavenger Zombies." },
+            { key = "nightmare", name = "Nightmare", desc = "Extreme revival rate, stronger Scavenger Zombies, 2-5 spawn per corpse." },
+        }
+    },
+
+    {
+        key     = "seasonal_surprise",
+        name    = "Seasonal Surprise",
+        desc    = "Happy spooktober!",
+        type    = "bool",
+        def     = false,
+        section = "options_extra",
+        hidden  = true,
+    },
 
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1244,22 +1473,33 @@ local options = {
     },
 
     -- Hidden Tests
+
     {
-        key    	= "shieldsrework",
-        name   	= "Shields Rework",
-        desc   	= "Shields block all projectiles. Overkill damage is blocked once before reaching 0% charge. Shields are disabled for a few seconds upon reaching 0%.",
-        type   	= "bool",
-        hidden 	= true,
+        key     = "techsplit",
+        name    = "Tech Split",
+        desc    = "Adds a new tier between T1 and T2 for bots and vehicles",
+        type    = "bool",
+        hidden  = true,
         section = "options_experimental",
-        def  	= false,
+        def     = false,
     },
 
     {
-        key   	= "accuratelasers",
-        name   	= "Accurate Lasers",
-        desc   	= "Removes inaccuracy vs moving units from all laser weapons as a proposed solution to overpowered scoutspam",
+        key     = "techsplit_balance",
+        name    = "Tech Split Balance Test",
+        desc    = "Adjusts the balance of units in the proposed tech split.",
+        type    = "bool",
+        hidden  = true,
+        section = "options_experimental",
+        def     = false,
+    },
+
+    {
+        key    	= "shieldsrework",
+        name   	= "Shields Rework v2.0",
+        desc   	= "Shields block plasma. Overkill damage is absorbed. Shield is down for the duration required to recharge the overkill damage at normal energy cost.",
         type   	= "bool",
-        hidden 	= true,
+        hidden 	= false,
         section = "options_experimental",
         def  	= false,
     },
@@ -1320,7 +1560,7 @@ local options = {
         name   	= "Release Candidate Units",
         desc   	= "Adds additional units to the game which are being considered for mainline integration and are balanced, or in end tuning stages.  Currently adds Printer, Siegebreaker, Phantom (Core T2 veh), Shockwave (Arm T2 EMP Mex), and Drone Carriers for armada and cortex",
         type   	= "bool",
-        hidden 	= false,
+        hidden 	= true,
         section = "options_experimental",
         def  	= false,
     },
@@ -1328,9 +1568,29 @@ local options = {
     {
         key 	= "proposed_unit_reworks",
         name 	= "Proposed Unit Reworks",
-        desc 	= "Modoption used to test and balance unit reworks that are being considered for the base game.",
+        desc 	= "Modoption used to test balance changes that are being considered for the base game.",
         type 	= "bool",
         --hidden 	= true,
+        section = "options_experimental",
+        def 	= false,
+    },
+
+    {
+        key 	= "naval_balance_tweaks",
+        name 	= "Proposed Naval Balance Tweaks",
+        desc 	= "Modoption used to test specific balance adjustments dedicated towards naval units.",
+        type 	= "bool",
+        --hidden 	= true,
+        section = "options_experimental",
+        def 	= false,
+    },
+
+    {
+        key 	= "factory_costs",
+        name 	= "Factory Costs Test Patch",
+        desc 	= "Cheaper and more efficient factories, more expensive nanos, and slower to build higher-tech units. Experimental, not expected to be balanced by itself - a test to try how the game plays if each player is more able to afford their own T2 factory, while making assisting them less efficient.",
+        type 	= "bool",
+        hidden 	= true,
         section = "options_experimental",
         def 	= false,
     },
@@ -1439,6 +1699,30 @@ local options = {
         type    = "bool",
         def     =  false,
     },
+    {
+        key     = "dummyboolfeelfreetotouch",
+        name    = "dummy to hide the faction limiter",
+        desc    = "This is a dummy to hide the faction limiter from the text field, it needs to exploit or work around some flaws to hide it...",
+        section = "dev",
+        type    = "bool",
+        unlock  = {"dummyboolfeelfreetotouch", "factionlimiter"},
+    },
+    {
+        key     = "factionlimiter",
+        name    = "Faction Limiter:".."\255\255\191\76".." ON\n".."\255\125\125\125".."BITMASK",
+        desc    = [[BITMASK to be used via custom ui, only visible when boss
+Set to [0] To disable.
+Otherwise: 0th, 1st and 2nd bit are armada, cortex and legion respectively.
+Offset by 3 for each consecutive team.
+If a team's bitmask is 0, All are Enabled.
+Example: Armada VS Cortex VS Legion: 273 or 100 010 001 or 256 + 16 + 1]],
+        section = "dev",
+        type    = "number",
+        def     =  0,
+        min    	= 0,
+        max    	= 16777215,-- math hard, 24 bit limitish?
+        step   	= 1,
+    },
 
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1505,6 +1789,45 @@ local options = {
         section = "options_cheats",
         type    = "subheader",
         def     =  true,
+    },
+
+    {
+        key     = "sub_header",
+        section = "options_cheats",
+        type    = "separator",
+    },
+
+    {
+        key     = "sub_header",
+        name    = "-- AI Cheats",
+        desc    = "",
+        section = "options_cheats",
+        type    = "subheader",
+        def     =  true,
+    },
+
+    {
+        key 	= "dynamiccheats",
+        name 	= "Dynamic Cheats",
+        desc   	= "Cheats marked as [Dynamic] react to the game state and are suspended when the opposition is losing",
+        type 	= "bool",
+        def 	= true,
+        section = "options_cheats",
+    },
+
+    {
+        key		= "nowasting",
+        name	= "No Resource Wasting",
+        desc	= "[Dynamic] Increases Buildpower for the affected team's builders and factories to prevent resource",
+        type	= "list",
+        def		= "default",
+        section	= "options_cheats",
+        items	= {
+            { key= "default", 	name= "Default", 		desc="Disabled, unless other features use it"},
+            { key= "disabled", 	name= "Disabled", 		desc="Disabled"},
+            { key= "ai", 		name= "AI Only", 	    desc="All AI except Scavengers and Raptors"},
+            { key= "all", 	    name= "All",			desc="AI and Player Teams both excluding Scavengers and Raptors" },
+        }
     },
 
     {
@@ -1778,6 +2101,7 @@ local options = {
         type   	= "list",
         section = "options_cheats",
         def  	= "unchanged",
+        hidden  = true,
         items	= {
             { key = "unchanged", 		name = "Unchanged", 			desc = "Unchanged" },
             { key = "absorbplasma", 	name = "Absorb Plasma", 		desc = "Collisions Disabled" },
