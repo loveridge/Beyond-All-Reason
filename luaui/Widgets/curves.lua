@@ -15,9 +15,9 @@ local msz = Game.mapSizeZ
 
 local GetTeamColor = Spring.GetTeamColor
 
-local luaShaderDir = "LuaUI/Widgets/Include/"
-local LuaShader = VFS.Include(luaShaderDir .. "LuaShader.lua")
-VFS.Include(luaShaderDir .. "instancevbotable.lua")
+local luaShaderDir = "LuaUI/Include/"
+local LuaShader = gl.LuaShader
+local InstanceVBOTable = gl.InstanceVBOTable
 
 GL.KEEP = 0x1E00
 GL.INCR_WRAP = 0x8507
@@ -109,7 +109,8 @@ local defaultInterval = {
 	position = { 600, 600, 600 },
 	curve = {
 		degree = 3,
-		controlPoints = { 5681.79736, 740.087708, 5024.29248, 1, 4687.32471, 582.756775, 3214.92188, 1, 7622.63623, 521.41449, 1362.89307, 1, 9532.92773, 705.304077, 3649.56982, 1, 7732.88379, 445.317993, 5839.67432, 1 },
+		controlPoints = {1, 740.087708, 1, 1, 200, 582.756775, 200, 1, 500, 521.41449, 500, 1, 500, 705.304077, 800, 1, 500, 445.317993, 1000, 1 },
+		-- controlPoints = { 5681.79736, 740.087708, 5024.29248, 1, 4687.32471, 582.756775, 3214.92188, 1, 7622.63623, 521.41449, 1362.89307, 1, 9532.92773, 705.304077, 3649.56982, 1, 7732.88379, 445.317993, 5839.67432, 1 },
 		knots = { 0, 0, 0, 0, .5, 1, 1, 1, 1 }
 	},
 	lookPosition = { 400, 400, 400 },
@@ -193,9 +194,9 @@ function widget:SetCamRelativeMode()
 	local m = document:GetElementById('setrelmode'):GetAttribute("value")
 	if m == '' then return end
 	Spring.Echo("relmode", m)
-	cameraMode = m
+	relativeMode = tonumber(m)
 	Spring.SetDollyCameraRelativeMode(m)
-		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 	updateInstanceData()
 end
 
@@ -210,6 +211,13 @@ function widget:SetCamLookPosition()
 	if xyz == '' then return end
 	local s = split(xyz, ",")
 	Spring.SetDollyCameraLookPosition(tonumber(s[1]), tonumber(s[2]), tonumber(s[3]))
+end
+
+function widget:ExportCurves()
+	Spring.Echo("Camera Curve", curveControlPoints)
+	Spring.Echo("Camera Curve Knots", nurbsKnots)
+	Spring.Echo("Camera Look Curve", lookCPoints)
+	Spring.Echo("Camera Look Curve Knots", lookKnots)
 end
 
 local function addTo(vector, ...)
@@ -236,7 +244,7 @@ local dataModel = {
 		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 		updateInstanceData()
 	end,
-	arr = {{name="n1"}, {name="n2"}},
+	arr = { { name = "n1" }, { name = "n2" } },
 	currentInterval = defaultInterval,
 	allIntervals = dollyIntervals
 }
@@ -246,7 +254,20 @@ local lineData = {}
 local spcount = 0
 local linecount = 0
 local conecount = 0
-updateInstanceData = function()
+updateInstanceData = function(norel)
+	if relativeMode == 2 and not norel then
+		for i = 1, #curveControlPoints, 4 do
+			local ux, uy, uz = Spring.GetUnitPosition(lookUnitID)
+			if ux then
+				curveControlPoints[i] = ux + curveControlPoints[i]
+				curveControlPoints[i + 1] = uy + curveControlPoints[i + 1]
+				curveControlPoints[i + 2] = uz + curveControlPoints[i + 2]
+			end
+		end
+	end
+	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+
+	lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
 	dm.currentInterval = defaultInterval
 	startboxInstanceData = {}
 	coneData = {}
@@ -256,15 +277,20 @@ updateInstanceData = function()
 	for i = 1, #points, 3 do
 		spcount = spcount + 1
 		addTo(startboxInstanceData, 0, 0, 1, .5)
-		addTo(startboxInstanceData, points[i], points[i + 1], points[i + 2])
+		local x = points[i]
+		local y = points[i + 1]
+		local z = points[i + 2]
+
+		Spring.Echo(x, y, z)
+		addTo(startboxInstanceData, x, y, z)
 		addTo(startboxInstanceData, 1, 0, 0)
 		conecount = conecount + 1
 		addTo(coneData, 0, 0, 0, 1, 1)
 		addTo(coneData, 1, 1, 1, 1)
 		addTo(coneData, points[i], points[i + 1], points[i + 2])
-		local x = points[i] - lookPoints[i]
-		local y = points[i + 1] - lookPoints[i + 1]
-		local z = points[i + 2] - lookPoints[i + 2]
+		x = points[i] - lookPoints[i]
+		y = points[i + 1] - lookPoints[i + 1]
+		z = points[i + 2] - lookPoints[i + 2]
 		if cameraLookMode == 2 then
 			local ux, uy, uz = Spring.GetUnitPosition(lookUnitID)
 			if ux then
@@ -342,7 +368,7 @@ function widget:Initialize()
 
 
 	curvepointData.vao = gl.GetVAO()
-	local sphereVBO, numVerts, sphereIndexVBO, numIndex = makeSphereVBO(32, 16, cpRad)
+	local sphereVBO, numVerts, sphereIndexVBO, numIndex = InstanceVBOTable.makeSphereVBO(32, 16, cpRad)
 	-- {id = 0, name = "position", size = 4},
 	-- {id = 1, name = "normals", size = 3},
 	-- {id = 2, name = "uvs", size = 2},
@@ -361,7 +387,7 @@ function widget:Initialize()
 	curvepointData.vertCount = numIndex
 
 	camconeData.vao = gl.GetVAO()
-	local coneVBO, numVertices = makeConeVBO(32, 100, 50)
+	local coneVBO, numVertices = InstanceVBOTable.makeConeVBO(32, 100, 50)
 
 	camconeData.vao:AttachVertexBuffer(coneVBO)
 	local indxVBO = gl.GetVBO(GL.ELEMENT_ARRAY_BUFFER, false)
@@ -409,6 +435,7 @@ function widget:Initialize()
 
 	context = RmlUi.GetContext("shared")
 	dm = context:OpenDataModel("mm_dm", dataModel)
+
 	document = context:LoadDocument("LuaUi/Widgets/rml_widget_assets/curves.rml", widget)
 	document:Show()
 	updateInstanceData()
@@ -433,7 +460,6 @@ function widget:AddCP()
 	for i = 1, total, 1 do
 		nurbsKnots[i] = (i - 1) / (total - 1)
 	end
-	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
 	Spring.Echo(points, total, nurbsKnots)
 	updateInstanceData()
 end
@@ -564,15 +590,20 @@ function widget:MouseMove(mx, my, dx, dy, mButton)
 		hitPoints[hitindex + 1] = hitPoints[hitindex + 1] +
 			math.sqrt(dx * dx + dz * dz) * sign(dy)
 	else
+		-- if relativeMode == 2 then
+		-- 	local ux, uy, uz = Spring.GetUnitPosition(lookUnitID)
+		-- 	dx = dx - ux
+		-- 	dz = dz - uz
+		-- end
 		hitPoints[hitindex] = hitPoints[hitindex] + dx
 		hitPoints[hitindex + 2] = hitPoints[hitindex + 2] + dz
 	end
 	if hitPoints[hitindex + 1] < mapy then hitPoints[hitindex + 1] = mapy + 5 end
-	if lookHit then
-		lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
-	else
-		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
-	end
+	-- if lookHit then
+	-- 	lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
+	-- else
+	-- 	points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+	-- end
 
 
 	lastPathPos[1] = pos[4]
@@ -580,7 +611,7 @@ function widget:MouseMove(mx, my, dx, dy, mButton)
 	lastPathPos[3] = pos[6]
 	startDrag[1] = mx
 	startDrag[2] = my
-	updateInstanceData()
+	updateInstanceData(true)
 end
 
 function widget:MouseRelease(x, y, button)
@@ -590,10 +621,18 @@ function widget:MouseRelease(x, y, button)
 	if hitindex < 0 then return end
 	hitindex = -1
 	if lookHit then
-		lookPoints = Spring.SolveNURBSCurve(3, lookCPoints, lookKnots, segments)
 		Spring.SetDollyCameraLookCurve(3, lookCPoints, lookKnots)
 	else
-		points = Spring.SolveNURBSCurve(3, curveControlPoints, nurbsKnots, segments)
+		if relativeMode == 2 then
+			for i = 1, #curveControlPoints, 4 do
+				local ux, uy, uz = Spring.GetUnitPosition(lookUnitID)
+				if ux then
+					curveControlPoints[i] = curveControlPoints[i] - ux
+					curveControlPoints[i + 1] =  curveControlPoints[i + 1] - uy
+					curveControlPoints[i + 2] =  curveControlPoints[i + 2] - uz
+				end
+			end
+		end
 		Spring.SetDollyCameraCurve(3, curveControlPoints, nurbsKnots)
 	end
 	Spring.Echo("set")
@@ -603,12 +642,12 @@ function widget:MouseRelease(x, y, button)
 	end
 	Spring.Echo(str)
 	lookHit = false
-	updateInstanceData()
+	updateInstanceData(true)
 end
 
 function widget:DrawWorld()
 	if not draw then return end
-	dm.currentInterval.curve.knots[1] = Spring.GetGameFrame()
+	-- dm.currentInterval.curve.knots[1] = Spring.GetGameFrame()
 	-- dm:__SetDirty("currentInterval")
 	gl.Blending(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
 
@@ -646,3 +685,11 @@ end
 
 -- function widget:Update(delta)
 -- end
+
+function widget:GetConfigData()
+	return { notest = 1 }
+end
+
+function widget:SetConfigData(data)
+	Spring.Echo(data)
+end
