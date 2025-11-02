@@ -492,6 +492,7 @@ function widgetHandler:LoadWidget(filename, fromZip, enableLocalsAccess)
 
 	self:FinalizeWidget(widget, filename, basename)
 	local name = widget.whInfo.name
+	RmlUi.ClearResourcesForWidget(name)
 	if basename == SELECTOR_BASENAME then
 		self.orderList[name] = 1  -- always load the widget selector
 	end

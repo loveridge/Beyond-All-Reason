@@ -18,6 +18,7 @@ function widget:GetInfo()
 end
 
 local widgetContents = {} -- maps widgetname to raw code
+local rmlFileContents = {} -- maps rml resources to raw code
 local widgetFilesNames = {} -- maps widgetname to filename
 local mouseOffscreen = select(6, Spring.GetMouseState())
 
@@ -28,13 +29,31 @@ function widget:Initialize()
 		widgetFilesNames[whInfo.name] = whInfo.filename
 		if not widgetContents[whInfo.name] then
 			widgetContents[whInfo.name] = VFS.LoadFile(whInfo.filename)
+			local rmlfiles = RmlUi.GetResourcesForWidget(whInfo.name)
+			if rmlfiles then
+				for _, value in ipairs(rmlfiles) do
+					rmlFileContents[value] = VFS.LoadFile(value)
+				end
+			end
 		end
 	end
 end
 
 local function CheckForChanges(widgetName, fileName)
 	local newContents = VFS.LoadFile(fileName)
-	if newContents ~= widgetContents[widgetName] then
+	local changed = newContents ~= widgetContents[widgetName]
+	local rmlResources = RmlUi.GetResourcesForWidget(widgetName)
+	if not changed and rmlResources then
+		for _, value in ipairs(rmlResources) do
+			local newRmlContents = VFS.LoadFile(value)
+			if newRmlContents ~= rmlFileContents[value] then
+				rmlFileContents[value]=newRmlContents
+				changed = true
+				break
+			end
+		end
+	end
+	if changed then
 		widgetContents[widgetName] = newContents
 		local chunk, err = loadstring(newContents, fileName)
 		if not mouseOffscreen and chunk == nil then

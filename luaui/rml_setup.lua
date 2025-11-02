@@ -31,7 +31,10 @@ RmlGuard = true
 	Contexts created with the Lua API are automatically disposed of when the LuaUi environment is unloaded
 ]]
 
+RmlUi.WidgetDocumentPaths = {}
+
 local oldCreateContext = RmlUi.CreateContext
+local oldGetContext = RmlUi.GetContext
 
 local function NewCreateContext(name)
 	local context = oldCreateContext(name)
@@ -51,7 +54,58 @@ local function NewCreateContext(name)
 	return context
 end
 
+local function NewGetContext(name)
+	local context = oldGetContext(name)
+	local wrap = {
+		LoadDocument = function(t, p, w)
+			local name = w.GetInfo().name
+			if not RmlUi.WidgetDocumentPaths[name] then
+				RmlUi.WidgetDocumentPaths[name] = {}
+			end
+			table.insert(RmlUi.WidgetDocumentPaths[name], p)
+			RmlUi.ClearDocumentPathRequests(p)
+			return context:LoadDocument(p, w)
+		end
+	}
+	-- Wrap the context so that we can capture the documents loaded by a widget
+	local contextWrapper = setmetatable(wrap, {
+		__index = function (t, key)
+			-- If the key is in our wrapped table, use that
+			if rawget(t, key) then return rawget(t,key) end
+			-- If the underlying context property is a function, then it must be
+			-- wrapped in order to pass the userdata object to the function instead of the wrapper table
+			if type(context[key]) == "function" then
+				return function(wrapperTable, ...)
+					return context[key](context, ...)
+				end
+			end
+			return context[key]
+		end,
+		__newindex = function (t, key, v)
+		end,
+	})
+	return contextWrapper
+end
+
 RmlUi.CreateContext = NewCreateContext
+RmlUi.GetContext = NewGetContext
+
+RmlUi.ClearResourcesForWidget = function (name)
+	if RmlUi.WidgetDocumentPaths[name] then
+		RmlUi.WidgetDocumentPaths[name] = {}
+	end
+end
+RmlUi.GetResourcesForWidget = function (name)
+	local resources = {}
+	if not RmlUi.WidgetDocumentPaths[name] then return end
+	for _, value in ipairs(RmlUi.WidgetDocumentPaths[name]) do
+		table.insert(resources, value)
+		for _, resvalue in ipairs(RmlUi.GetDocumentPathRequests(value)) do
+			table.insert(resources, resvalue)
+		end
+	end
+	return resources
+end
 
 -- Load fonts
 RmlUi.LoadFontFace("fonts/Poppins-Regular.otf", true)
