@@ -36,24 +36,6 @@ RmlUi.WidgetDocumentPaths = {}
 local oldCreateContext = RmlUi.CreateContext
 local oldGetContext = RmlUi.GetContext
 
-local function NewCreateContext(name)
-	local context = oldCreateContext(name)
-
-	-- set up dp_ratio considering the user's UI scale preference and the screen resolution
-	local viewSizeX, viewSizeY = Spring.GetViewGeometry()
-
-	local userScale = Spring.GetConfigFloat("ui_scale", 1)
-
-	local baseWidth = 1920
-	local baseHeight = 1080
-	local resFactor = math.min(viewSizeX / baseWidth, viewSizeY / baseHeight)
-
-	context.dp_ratio = resFactor * userScale
-
-	context.dp_ratio = math.floor(context.dp_ratio * 100) / 100
-	return context
-end
-
 local function NewGetContext(name)
 	local context = oldGetContext(name)
 	local wrap = {
@@ -71,7 +53,7 @@ local function NewGetContext(name)
 	local contextWrapper = setmetatable(wrap, {
 		__index = function (t, key)
 			-- If the key is in our wrapped table, use that
-			if rawget(t, key) then return rawget(t,key) end
+			if rawget(t, key) then return rawget(t, key) end
 			-- If the underlying context property is a function, then it must be
 			-- wrapped in order to pass the userdata object to the function instead of the wrapper table
 			if type(context[key]) == "function" then
@@ -85,6 +67,25 @@ local function NewGetContext(name)
 		end,
 	})
 	return contextWrapper
+end
+
+local function NewCreateContext(name)
+	local context = oldCreateContext(name)
+	context = NewGetContext(name)
+
+	-- set up dp_ratio considering the user's UI scale preference and the screen resolution
+	local viewSizeX, viewSizeY = Spring.GetViewGeometry()
+
+	local userScale = Spring.GetConfigFloat("ui_scale", 1)
+
+	local baseWidth = 1920
+	local baseHeight = 1080
+	local resFactor = math.min(viewSizeX / baseWidth, viewSizeY / baseHeight)
+
+	context.dp_ratio = resFactor * userScale
+
+	context.dp_ratio = math.floor(context.dp_ratio * 100) / 100
+	return context
 end
 
 RmlUi.CreateContext = NewCreateContext
