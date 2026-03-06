@@ -93,34 +93,9 @@ local config = {
 	sndChatFileVolume = 0.55,
 }
 
-local maxConsoleLines = config.maxConsoleLines
-local fontsizeMult = config.fontsizeMult
-local backgroundOpacity = config.backgroundOpacity
-local handleTextInput = config.handleTextInput
-local inputButton = config.inputButton
-local hide = config.hide
-local showHistoryWhenChatInput = config.showHistoryWhenChatInput
-local showHistoryWhenCtrlShift = config.showHistoryWhenCtrlShift
-local enableShortcutClick = config.enableShortcutClick
-local hideSpecChat = config.hideSpecChat
-local hideSpecChatPlayer = config.hideSpecChatPlayer
-local playSound = config.playSound
-local sndChatFile = config.sndChatFile
-local sndChatFileVolume = config.sndChatFileVolume
-
-local usedFontSize = config.charSize * fontsizeMult
+local usedFontSize = config.charSize * config.fontsizeMult
 local usedConsoleFontSize = usedFontSize * config.consoleFontSizeMult
-local posY, posX, posX2 = config.posY, config.posX, config.posX2
-local maxLines = config.maxLines
-local maxLinesScrollFull = config.maxLinesScrollFull
-local maxLinesScrollChatInput = config.maxLinesScrollChatInput
-local maxLinesScroll = maxLinesScrollFull
-local lineTTL = config.lineTTL
-local consoleLineCleanupTarget = config.consoleLineCleanupTarget
-local orgLineCleanupTarget = config.orgLineCleanupTarget
-local maxTextInputChars = config.maxTextInputChars
-local allowMultiAutocomplete = config.allowMultiAutocomplete
-local allowMultiAutocompleteMax = config.allowMultiAutocompleteMax
+local maxLinesScroll = config.maxLinesScrollFull
 
 local document
 local context
@@ -300,6 +275,8 @@ local dataModel = {
 	showAutocompleteList = false,
 	showNewChatNotice = false,
 	notHoverable = true,
+	ctrlPressed = false,
+	ctrlShiftPressed = false,
 	noHistory = false,
 	historyTitle = "",
 	historyChatLabel = "Chat",
@@ -331,7 +308,7 @@ local dataModel = {
 		if mode == 'chat' or mode == 'console' then
 			historyMode = mode
 			if mode == 'chat' then
-				maxLinesScroll = maxLinesScrollFull
+				maxLinesScroll = config.maxLinesScrollFull
 			end
 			needsUiRefresh = true
 		end
@@ -357,8 +334,9 @@ local dataModel = {
 		end
 		widget:ScrollHistory(delta < 0, math.abs(delta))
 	end,
-	activateChatLine = function(ev, index)
+	activateChatLine = function(ev, index, id)
 		Spring.Echo("toggle", index, ev.type, ev.parameters.button, ev.parameters.mouse_x)
+		Spring.Echo(id)
 		widget:ActivateChatLine(tonumber(index) or 0)
 	end,
 	acceptAutocomplete = function(ev, index)
@@ -396,8 +374,8 @@ end
 
 local function setInputText(value)
 	value = stripColorCodes(value or "")
-	if string.len(value) > maxTextInputChars then
-		value = string.sub(value, 1, maxTextInputChars)
+	if string.len(value) > config.maxTextInputChars then
+		value = string.sub(value, 1, config.maxTextInputChars)
 	end
 	if dm_handle then
 		dm_handle.inputText = value
@@ -637,8 +615,8 @@ local function addChatLine(gameFrame, lineType, name, nameText, text, orgLineID,
 	if historyMode ~= 'chat' and not ignore then
 		setCurrentChatLine(#chatLines)
 	end
-	if not ignore and #orgLines == orgLineID and (lineType == LineTypes.Player or lineType == LineTypes.Spectator) and playSound and not Spring.IsGUIHidden() then
-		spPlaySoundFile(sndChatFile, sndChatFileVolume, nil, "ui")
+	if not ignore and #orgLines == orgLineID and (lineType == LineTypes.Player or lineType == LineTypes.Spectator) and config.playSound and not Spring.IsGUIHidden() then
+		spPlaySoundFile(config.sndChatFile, config.sndChatFileVolume, nil, "ui")
 	end
 end
 
@@ -656,6 +634,8 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 	local replaySpecEnd = string.find(line, " (replay)] ", 1, true)
 	local mapPointPos = string.find(line, " added point: ", 1, true)
 	local unitSharePos = string.find(line, " shared units to ", 1, true)
+	if string.sub(line, 1, 4) == '!NL=' then return end
+	Spring.Echo('!NL=' .. line)
 
 	if string.sub(line, 1, 1) == '<' and playerChatEnd and playernames[string.sub(line, 2, playerChatEnd - 1)] ~= nil then
 		lineType = LineTypes.Player
@@ -711,8 +691,8 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 			bypassThisMessage = true
 		end
 		local spectator = playernames[name] and playernames[name][2] or false
-		skipThisMessage = hideSpecChat and (not playernames[name] or spectator) and
-			(not hideSpecChatPlayer or not mySpec)
+		skipThisMessage = config.hideSpecChat and (not playernames[name] or spectator) and
+			(not config.hideSpecChatPlayer or not mySpec)
 		text = cleanUserText(text)
 		nameText = '<' .. ((playernames[name] and playernames[name][7]) or name) .. '>'
 	elseif unitSharePos and playernames[string.sub(line, 1, unitSharePos - 1)] ~= nil then
@@ -816,7 +796,7 @@ end
 
 local function cancelChatInput()
 	showTextInput = false
-	if showHistoryWhenChatInput then
+	if config.showHistoryWhenChatInput then
 		historyMode = false
 		setCurrentChatLine(#chatLines)
 	end
@@ -921,7 +901,7 @@ local function autocomplete(text, fresh)
 		end
 	end
 	if autocompleteWords[2] then
-		runAutocompleteSet(autocompleteWords, letters, allowMultiAutocomplete, true)
+		runAutocompleteSet(autocompleteWords, letters, config.allowMultiAutocomplete, true)
 	else
 		if #letters >= 2 then
 			runAutocompleteSet(autocompletePlayernames, letters)
@@ -929,13 +909,13 @@ local function autocomplete(text, fresh)
 		if not autocompleteWords[1] then
 			if isCmd then
 				if #words <= 1 then
-					runAutocompleteSet(autocompleteCommands, letters, allowMultiAutocomplete)
+					runAutocompleteSet(autocompleteCommands, letters, config.allowMultiAutocomplete)
 				else
-					runAutocompleteSet(autocompleteUnitCodename, letters, allowMultiAutocomplete)
+					runAutocompleteSet(autocompleteUnitCodename, letters, config.allowMultiAutocomplete)
 				end
 			else
 				if #letters >= 2 then
-					runAutocompleteSet(autocompleteUnitNames, letters, allowMultiAutocomplete, true)
+					runAutocompleteSet(autocompleteUnitNames, letters, config.allowMultiAutocomplete, true)
 				end
 			end
 		end
@@ -950,7 +930,7 @@ function widget:ActivateChatLine(index)
 	local shownCount = #(dm_handle.chatRows.__raw())
 	local line = chatLines[currentChatLine - (shownCount - index - 1)]
 	Spring.Echo(chatLines)
-	Spring.Echo(index + 1, currentChatLine, #chatLines, maxLines, shownCount)
+	Spring.Echo(index + 1, currentChatLine, #chatLines, config.maxLines, shownCount)
 	Spring.Echo(line)
 	if not line then
 		return
@@ -1001,9 +981,9 @@ function widget:OpenInput(ctrl, alt, shift)
 	end
 	cancelChatInput()
 	showTextInput = true
-	if showHistoryWhenChatInput then
+	if config.showHistoryWhenChatInput then
 		historyMode = 'chat'
-		maxLinesScroll = maxLinesScrollChatInput
+		maxLinesScroll = config.maxLinesScrollChatInput
 	end
 	widgetHandler.textOwner = self
 	if not inputHistory[inputHistoryCurrent] or inputHistory[inputHistoryCurrent] ~= '' then
@@ -1134,7 +1114,7 @@ local function buildAutocompleteRows()
 				prefix = letters,
 				suffix = string.sub(word, letterCount + 1),
 			}
-			if #rows >= allowMultiAutocompleteMax then
+			if #rows >= config.allowMultiAutocompleteMax then
 				break
 			end
 		end
@@ -1173,14 +1153,14 @@ local function refreshDocumentModel()
 	end
 
 	if not historyMode then
-		local visibleConsole = sliceRows(consoleLines, #consoleLines, maxConsoleLines, function(row)
-			return now - row.startTime < lineTTL
+		local visibleConsole = sliceRows(consoleLines, #consoleLines, config.maxConsoleLines, function(row)
+			return now - row.startTime < config.lineTTL
 		end)
 		for _, row in ipairs(visibleConsole) do
 			consoleRows[#consoleRows + 1] = consoleRowToView(row.orgLineID or 0, row, false)
 		end
-		local visibleChat = sliceRows(chatLines, currentChatLine, maxLines, function(row)
-			return not row.ignore and (now - row.startTime < lineTTL)
+		local visibleChat = sliceRows(chatLines, currentChatLine, config.maxLines, function(row)
+			return not row.ignore and (now - row.startTime < config.lineTTL)
 		end)
 		for i, row in ipairs(visibleChat) do
 			local sourceIndex = 0
@@ -1233,21 +1213,21 @@ local function refreshDocumentModel()
 	local showNewChatNotice = false
 	local newChatNotice = ""
 	if historyMode and chatLines[lastUnignoredChatLineID] and not chatLines[lastUnignoredChatLineID].ignore then
-		if currentChatLine < lastUnignoredChatLineID and (now - chatLines[lastUnignoredChatLineID].startTime < lineTTL) then
+		if currentChatLine < lastUnignoredChatLineID and (now - chatLines[lastUnignoredChatLineID].startTime < config.lineTTL) then
 			showNewChatNotice = true
 			newChatNotice = (chatLines[lastUnignoredChatLineID].playerNameText or '') ..
 				": " .. (chatLines[lastUnignoredChatLineID].text or '')
 		end
 	end
 
-	dm_handle.rootVisible = (not hide and (#chatRows > 0 or #consoleRows > 0 or showTextInput)) or historyMode
-	dm_handle.showConsoleStack = (not historyMode and not hide and #consoleRows > 0)
-	dm_handle.showChatStack = (not hide and (#chatRows > 0 or showTextInput)) and not historyMode
+	dm_handle.rootVisible = (not config.hide and (#chatRows > 0 or #consoleRows > 0 or showTextInput)) or historyMode
+	dm_handle.showConsoleStack = (not historyMode and not config.hide and #consoleRows > 0)
+	dm_handle.showChatStack = (not config.hide and (#chatRows > 0 or showTextInput)) and not historyMode
 	dm_handle.showHistoryPanel = historyMode and true or false
 	dm_handle.isHistoryChat = historyMode == 'chat'
 	dm_handle.isHistoryConsole = historyMode == 'console'
-	dm_handle.showTextInput = showTextInput and handleTextInput
-	dm_handle.showInputButton = inputButton and handleTextInput
+	dm_handle.showTextInput = showTextInput and config.handleTextInput
+	dm_handle.showInputButton = config.inputButton and config.handleTextInput
 	dm_handle.showAutocomplete = showTextInput and autocompleteText ~= nil
 	dm_handle.showAutocompleteList = showTextInput and autocompleteText ~= nil and autocompleteWords[2] ~= nil
 	dm_handle.showNewChatNotice = showNewChatNotice
@@ -1276,12 +1256,12 @@ end
 
 local function hidespecchatCmd(_, _, params)
 	if params[1] then
-		hideSpecChat = (params[1] == '1')
+		config.hideSpecChat = (params[1] == '1')
 	else
-		hideSpecChat = not hideSpecChat
+		config.hideSpecChat = not config.hideSpecChat
 	end
-	Spring.SetConfigInt('HideSpecChat', hideSpecChat and 1 or 0)
-	if hideSpecChat then
+	Spring.SetConfigInt('HideSpecChat', config.hideSpecChat and 1 or 0)
+	if config.hideSpecChat then
 		spEcho("Hiding all spectator chat")
 	else
 		spEcho("Showing all spectator chat again")
@@ -1291,12 +1271,12 @@ end
 
 local function hidespecchatplayerCmd(_, _, params)
 	if params[1] then
-		hideSpecChatPlayer = (params[1] == '1')
+		config.hideSpecChatPlayer = (params[1] == '1')
 	else
-		hideSpecChatPlayer = not hideSpecChatPlayer
+		config.hideSpecChatPlayer = not config.hideSpecChatPlayer
 	end
-	Spring.SetConfigInt('HideSpecChatPlayer', hideSpecChatPlayer and 1 or 0)
-	if hideSpecChat then
+	Spring.SetConfigInt('HideSpecChatPlayer', config.hideSpecChatPlayer and 1 or 0)
+	if config.hideSpecChat then
 		spEcho("Hiding all spectator chat when player")
 	else
 		spEcho("Showing all spectator chat when player again")
@@ -1305,9 +1285,9 @@ local function hidespecchatplayerCmd(_, _, params)
 end
 
 local function preventhistorymodeCmd()
-	showHistoryWhenCtrlShift = not showHistoryWhenCtrlShift
-	enableShortcutClick = not enableShortcutClick
-	if not showHistoryWhenCtrlShift then
+	config.showHistoryWhenCtrlShift = not config.showHistoryWhenCtrlShift
+	config.enableShortcutClick = not config.enableShortcutClick
+	if not config.showHistoryWhenCtrlShift then
 		spEcho("Preventing toggling historymode via CTRL+SHIFT")
 	else
 		spEcho("Enabled toggling historymode via CTRL+SHIFT")
@@ -1445,9 +1425,9 @@ function widget:Update(dt)
 				end
 			end
 		end
-		if hideSpecChat ~= (Spring.GetConfigInt('HideSpecChat', 0) == 1) or hideSpecChatPlayer ~= (Spring.GetConfigInt('HideSpecChatPlayer', 1) == 1) then
-			hideSpecChat = (Spring.GetConfigInt('HideSpecChat', 0) == 1)
-			hideSpecChatPlayer = (Spring.GetConfigInt('HideSpecChatPlayer', 1) == 1)
+		if config.hideSpecChat ~= (Spring.GetConfigInt('HideSpecChat', 0) == 1) or config.hideSpecChatPlayer ~= (Spring.GetConfigInt('HideSpecChatPlayer', 1) == 1) then
+			config.hideSpecChat = (Spring.GetConfigInt('HideSpecChat', 0) == 1)
+			config.hideSpecChatPlayer = (Spring.GetConfigInt('HideSpecChatPlayer', 1) == 1)
 			for i = 1, #chatLines do
 				if chatLines[i].lineType == LineTypes.Spectator then
 					if shouldHideSpecMessage() then
@@ -1487,19 +1467,19 @@ function widget:Update(dt)
 		-- 		maxLinesScroll = maxLinesScrollFull
 		-- 	end
 	elseif historyMode then
-		if not showHistoryWhenChatInput or not showTextInput then
+		if not config.showHistoryWhenChatInput or not showTextInput then
 			historyMode = false
 			setCurrentChatLine(#chatLines)
 		end
 	end
 
-	if #consoleLines > consoleLineCleanupTarget * 1.15 then
-		consoleLines = cleanupLineTable(consoleLines, consoleLineCleanupTarget)
+	if #consoleLines > config.consoleLineCleanupTarget * 1.15 then
+		consoleLines = cleanupLineTable(consoleLines, config.consoleLineCleanupTarget)
 		currentConsoleLine = #consoleLines
 		needsUiRefresh = true
 	end
-	if #orgLines > orgLineCleanupTarget * 1.15 then
-		orgLines = cleanupLineTable(orgLines, orgLineCleanupTarget)
+	if #orgLines > config.orgLineCleanupTarget * 1.15 then
+		orgLines = cleanupLineTable(orgLines, config.orgLineCleanupTarget)
 		needsUiRefresh = true
 	end
 	if needsUiRefresh or (historyMode and mathFloor(os.clock() * 4) % 4 == 0) then
@@ -1522,7 +1502,7 @@ function widget:RecvLuaMsg(msg)
 end
 
 function widget:TextInput(char)
-	if handleTextInput and not chobbyInterface and not Spring.IsGUIHidden() and showTextInput then
+	if config.handleTextInput and not chobbyInterface and not Spring.IsGUIHidden() and showTextInput then
 		local inputText = getInputText()
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
@@ -1540,10 +1520,10 @@ function widget:TextInput(char)
 			inputText = utf8.sub(inputText, 1, inputTextPosition) .. char .. utf8.sub(inputText, inputTextPosition + 1)
 			inputTextPosition = inputTextPosition + 1
 		end
-		if string.len(inputText) > maxTextInputChars then
-			inputText = string.sub(inputText, 1, maxTextInputChars)
-			if inputTextPosition > maxTextInputChars then
-				inputTextPosition = maxTextInputChars
+		if string.len(inputText) > config.maxTextInputChars then
+			inputText = string.sub(inputText, 1, config.maxTextInputChars)
+			if inputTextPosition > config.maxTextInputChars then
+				inputTextPosition = config.maxTextInputChars
 			end
 		end
 		inputText = setInputText(inputText)
@@ -1560,16 +1540,20 @@ end
 
 function widget:KeyRelease()
 	local alt, ctrl, _, shift = Spring.GetModKeyState()
+	dm_handle.ctrlPressed = ctrl
+	dm_handle.ctrlShiftPressed = ctrl and shift
 	if ctrl and shift then dm_handle.notHoverable = false else dm_handle.notHoverable = true end
 	return false
 end
 
 function widget:KeyPress(key)
-	if Spring.IsGUIHidden() or not handleTextInput then
+	if Spring.IsGUIHidden() or not config.handleTextInput then
 		return
 	end
 	local inputText = getInputText()
 	local alt, ctrl, _, shift = Spring.GetModKeyState()
+	dm_handle.ctrlPressed = ctrl
+	dm_handle.ctrlShiftPressed = ctrl and shift
 	if ctrl and shift then dm_handle.notHoverable = false else dm_handle.notHoverable = true end
 	if key == KEYSYMS.RETURN then
 		if showTextInput then
@@ -1627,10 +1611,10 @@ function widget:KeyPress(key)
 		inputText = utf8.sub(inputText, 1, inputTextPosition) ..
 			clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
 		inputTextPosition = inputTextPosition + utf8.len(clipboardText)
-		if string.len(inputText) > maxTextInputChars then
-			inputText = string.sub(inputText, 1, maxTextInputChars)
-			if inputTextPosition > maxTextInputChars then
-				inputTextPosition = maxTextInputChars
+		if string.len(inputText) > config.maxTextInputChars then
+			inputText = string.sub(inputText, 1, config.maxTextInputChars)
+			if inputTextPosition > config.maxTextInputChars then
+				inputTextPosition = config.maxTextInputChars
 			end
 		end
 		inputText = setInputText(inputText)
@@ -1862,7 +1846,7 @@ function widget:ViewResize()
 	vsx, vsy = Spring.GetViewGeometry()
 	local widgetScale = vsy * 0.00075 * config.ui_scale
 	local charSize = 21 * mathClamp(1 + ((1 - (vsy / 1200)) * 0.5), 1, 1.2)
-	usedFontSize = charSize * fontsizeMult * widgetScale
+	usedFontSize = charSize * config.fontsizeMult * widgetScale
 	usedConsoleFontSize = usedFontSize * config.consoleFontSizeMult
 	lineHeight = mathFloor(usedFontSize * config.lineHeightMult)
 	consoleLineHeight = mathFloor(usedConsoleFontSize * config.lineHeightMult)
@@ -1871,17 +1855,17 @@ function widget:ViewResize()
 	if WG['topbar'] and WG['topbar'].GetPosition then
 		topbarArea = WG['topbar'].GetPosition()
 		posY2 = mathFloor(topbarArea[2] - 4) / vsy
-		posX = topbarArea[1] / vsx
+		config.posX = topbarArea[1] / vsx
 		scrollingPosY = mathFloor(topbarArea[2] - 4 - backgroundPadding - backgroundPadding -
 			(lineHeight * maxLinesScroll)) / vsy
 	end
-	consolePosY = mathFloor((vsy * posY2) - backgroundPadding - (maxConsoleLines * consoleLineHeight)) / vsy
-	posY = mathFloor((consolePosY * vsy) - (backgroundPadding * 1.5) - ((lineHeight * maxLines))) / vsy
-	posY = mathMax(0, posY2 - ((posY2 - posY) * 2))
+	consolePosY = mathFloor((vsy * posY2) - backgroundPadding - (config.maxConsoleLines * consoleLineHeight)) / vsy
+	config.posY = mathFloor((consolePosY * vsy) - (backgroundPadding * 1.5) - ((lineHeight * config.maxLines))) / vsy
+	config.posY = mathMax(0, posY2 - ((posY2 - config.posY) * 2))
 	activationArea = {
-		mathFloor(vsx * posX),
-		mathFloor(vsy * posY),
-		mathFloor(vsx * posX2),
+		mathFloor(vsx * config.posX),
+		mathFloor(vsy * config.posY),
+		mathFloor(vsx * config.posX2),
 		mathFloor(vsy * posY2),
 	}
 	needsUiRefresh = true
@@ -1983,46 +1967,46 @@ function widget:Initialize()
 
 	WG['chat'] = {}
 	WG['chat'].isInputActive = function() return showTextInput end
-	WG['chat'].getInputButton = function() return inputButton end
+	WG['chat'].getInputButton = function() return config.inputButton end
 	WG['chat'].setHide = function(value)
-		hide = value; needsUiRefresh = true
+		config.hide = value; needsUiRefresh = true
 	end
-	WG['chat'].getHide = function() return hide end
+	WG['chat'].getHide = function() return config.hide end
 	WG['chat'].setChatInputHistory = function(value)
-		showHistoryWhenChatInput = value; needsUiRefresh = true
+		config.showHistoryWhenChatInput = value; needsUiRefresh = true
 	end
-	WG['chat'].getChatInputHistory = function() return showHistoryWhenChatInput end
+	WG['chat'].getChatInputHistory = function() return config.showHistoryWhenChatInput end
 	WG['chat'].setInputButton = function(value)
-		inputButton = value; needsUiRefresh = true
+		config.inputButton = value; needsUiRefresh = true
 	end
-	WG['chat'].getHandleInput = function() return handleTextInput end
+	WG['chat'].getHandleInput = function() return config.handleTextInput end
 	WG['chat'].setHandleInput = function(value)
-		handleTextInput = value
-		if not handleTextInput then
+		config.handleTextInput = value
+		if not config.handleTextInput then
 			cancelChatInput()
 		end
 		Spring.SDLStartTextInput()
 		needsUiRefresh = true
 	end
-	WG['chat'].getChatVolume = function() return sndChatFileVolume end
+	WG['chat'].getChatVolume = function() return config.sndChatFileVolume end
 	WG['chat'].setChatVolume = function(value)
-		sndChatFileVolume = value; needsUiRefresh = true
+		config.sndChatFileVolume = value; needsUiRefresh = true
 	end
-	WG['chat'].getBackgroundOpacity = function() return backgroundOpacity end
+	WG['chat'].getBackgroundOpacity = function() return config.backgroundOpacity end
 	WG['chat'].setBackgroundOpacity = function(value)
-		backgroundOpacity = value; needsUiRefresh = true
+		config.backgroundOpacity = value; needsUiRefresh = true
 	end
-	WG['chat'].getMaxLines = function() return maxLines end
+	WG['chat'].getMaxLines = function() return config.maxLines end
 	WG['chat'].setMaxLines = function(value)
-		maxLines = value; widget:ViewResize()
+		config.maxLines = value; widget:ViewResize()
 	end
-	WG['chat'].getMaxConsoleLines = function() return maxConsoleLines end
+	WG['chat'].getMaxConsoleLines = function() return config.maxConsoleLines end
 	WG['chat'].setMaxConsoleLines = function(value)
-		maxConsoleLines = value; widget:ViewResize()
+		config.maxConsoleLines = value; widget:ViewResize()
 	end
-	WG['chat'].getFontsize = function() return fontsizeMult end
+	WG['chat'].getFontsize = function() return config.fontsizeMult end
 	WG['chat'].setFontsize = function(value)
-		fontsizeMult = value; widget:ViewResize()
+		config.fontsizeMult = value; widget:ViewResize()
 	end
 	WG['chat'].addChatLine = function(gameFrame, lineType, name, nameText, text, orgLineID, ignore)
 		addChatLine(gameFrame, lineType, name, nameText, text, orgLineID, ignore, true)
@@ -2075,7 +2059,7 @@ function widget:GetConfigData()
 			inputHistoryLimited[#inputHistoryLimited + 1] = v
 		end
 	end
-	local maxOrgLines = orgLineCleanupTarget
+	local maxOrgLines = config.orgLineCleanupTarget
 	if #orgLines > maxOrgLines then
 		local prunedOrgLines = {}
 		for i = 1, maxOrgLines do
@@ -2088,18 +2072,18 @@ function widget:GetConfigData()
 		gameID = Game.gameID and Game.gameID or Spring.GetGameRulesParam("GameID"),
 		orgLines = orgLines,
 		inputHistory = inputHistoryLimited,
-		maxLines = maxLines,
-		maxConsoleLines = maxConsoleLines,
-		fontsizeMult = fontsizeMult,
-		chatBackgroundOpacity = backgroundOpacity,
-		sndChatFileVolume = sndChatFileVolume,
+		maxLines = config.maxLines,
+		maxConsoleLines = config.maxConsoleLines,
+		fontsizeMult = config.fontsizeMult,
+		chatBackgroundOpacity = config.backgroundOpacity,
+		sndChatFileVolume = config.sndChatFileVolume,
 		shutdownTime = os.clock(),
-		handleTextInput = handleTextInput,
-		inputButton = inputButton,
-		hide = hide,
-		showHistoryWhenChatInput = showHistoryWhenChatInput,
-		showHistoryWhenCtrlShift = showHistoryWhenCtrlShift,
-		enableShortcutClick = enableShortcutClick,
+		handleTextInput = config.handleTextInput,
+		inputButton = config.inputButton,
+		hide = config.hide,
+		showHistoryWhenChatInput = config.showHistoryWhenChatInput,
+		showHistoryWhenCtrlShift = config.showHistoryWhenCtrlShift,
+		enableShortcutClick = config.enableShortcutClick,
 		soundErrors = soundErrors,
 		playernames = playernames,
 		version = 2,
@@ -2122,16 +2106,16 @@ function widget:SetConfigData(data)
 		inputHistory = data.inputHistory
 		inputHistoryCurrent = #inputHistory
 	end
-	if data.sndChatFileVolume ~= nil then sndChatFileVolume = data.sndChatFileVolume end
-	if data.showHistoryWhenCtrlShift ~= nil then showHistoryWhenCtrlShift = data.showHistoryWhenCtrlShift end
-	if data.enableShortcutClick ~= nil then enableShortcutClick = data.enableShortcutClick end
-	if data.chatBackgroundOpacity ~= nil then backgroundOpacity = data.chatBackgroundOpacity end
-	if data.hide ~= nil then hide = data.hide end
-	if data.showHistoryWhenChatInput ~= nil then showHistoryWhenChatInput = data.showHistoryWhenChatInput end
-	if data.maxLines ~= nil then maxLines = data.maxLines end
-	if data.maxConsoleLines ~= nil then maxConsoleLines = data.maxConsoleLines end
-	if data.fontsizeMult ~= nil then fontsizeMult = data.fontsizeMult end
-	if data.inputButton ~= nil then inputButton = data.inputButton end
-	if data.version ~= nil and data.handleTextInput ~= nil then handleTextInput = data.handleTextInput end
+	if data.sndChatFileVolume ~= nil then config.sndChatFileVolume = data.sndChatFileVolume end
+	if data.showHistoryWhenCtrlShift ~= nil then config.showHistoryWhenCtrlShift = data.showHistoryWhenCtrlShift end
+	if data.enableShortcutClick ~= nil then config.enableShortcutClick = data.enableShortcutClick end
+	if data.chatBackgroundOpacity ~= nil then config.backgroundOpacity = data.chatBackgroundOpacity end
+	if data.hide ~= nil then config.hide = data.hide end
+	if data.showHistoryWhenChatInput ~= nil then config.showHistoryWhenChatInput = data.showHistoryWhenChatInput end
+	if data.maxLines ~= nil then config.maxLines = data.maxLines end
+	if data.maxConsoleLines ~= nil then config.maxConsoleLines = data.maxConsoleLines end
+	if data.fontsizeMult ~= nil then config.fontsizeMult = data.fontsizeMult end
+	if data.inputButton ~= nil then config.inputButton = data.inputButton end
+	if data.version ~= nil and data.handleTextInput ~= nil then config.handleTextInput = data.handleTextInput end
 	needsUiRefresh = true
 end
