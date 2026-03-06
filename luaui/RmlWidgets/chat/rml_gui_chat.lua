@@ -27,7 +27,6 @@ local mathClamp = math.clamp or function(v, mn, mx)
 end
 
 local spGetMyTeamID = Spring.GetMyTeamID
-local spGetMouseState = Spring.GetMouseState
 local spEcho = Spring.Echo
 local spGetSpectatingState = Spring.GetSpectatingState
 local spGetPlayerInfo = Spring.GetPlayerInfo
@@ -125,7 +124,7 @@ local allowMultiAutocompleteMax = config.allowMultiAutocompleteMax
 
 local document
 local context
-local dm
+local dm_handle
 local modelName = "chat_rml_data"
 
 local I18N = {}
@@ -145,7 +144,6 @@ local myTeamID = spGetMyTeamID()
 local myAllyTeamID = Spring.GetMyAllyTeamID()
 local chobbyInterface
 local showTextInput = false
-local inputText = ''
 local inputTextPosition = 0
 local inputSelectionStart = nil
 local cursorBlinkTimer = 0
@@ -159,7 +157,8 @@ local autocompleteText
 local prevAutocompleteLetters
 local lastMessage
 local activationArea = { 0, 0, 0, 0 }
-local consoleActivationArea = { 0, 0, 0, 0 }
+local chatInputFocused = false
+local pendingInputFocus = false
 local topbarArea
 local scrollingPosY = 0.66
 local consolePosY = 0.9
@@ -178,7 +177,8 @@ local autocompleteUnitCodename = {}
 local addedOptionsList = false
 local needsUiRefresh = true
 local uiSec = 0
-local prevHoveredHistory = false
+local rootHoverDepth = 0
+local consoleHoverDepth = 0
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
 local anonymousTeamColor = { Spring.GetConfigInt("anonymousColorR", 255) / 255, Spring.GetConfigInt("anonymousColorG", 0) /
 255, Spring.GetConfigInt("anonymousColorB", 0) / 255 }
@@ -292,6 +292,8 @@ local dataModel = {
 	showHistoryPanel = false,
 	isHistoryChat = false,
 	isHistoryConsole = false,
+	hoverWidgetArea = false,
+	hoverConsoleArea = false,
 	showTextInput = false,
 	showInputButton = true,
 	showAutocomplete = false,
@@ -299,6 +301,12 @@ local dataModel = {
 	showNewChatNotice = false,
 	noHistory = false,
 	historyTitle = "",
+	historyChatLabel = "",
+	historyConsoleLabel = "",
+	historyCloseLabel = "",
+	historyHelp = "",
+	historyOlderLabel = "",
+	historyNewerLabel = "",
 	shortcutText = "",
 	modeLabel = "",
 	inputText = "",
@@ -357,7 +365,42 @@ local dataModel = {
 	beginInput = function()
 		widget:OpenInput(false, false, false)
 	end,
+	setWidgetHover = function(hovering)
+		if hovering then
+			rootHoverDepth = rootHoverDepth + 1
+		else
+			rootHoverDepth = mathMax(0, rootHoverDepth - 1)
+		end
+		if dm_handle then
+			dm_handle.hoverWidgetArea = (rootHoverDepth > 0)
+		end
+	end,
+	setConsoleHover = function(hovering)
+		if hovering then
+			consoleHoverDepth = consoleHoverDepth + 1
+		else
+			consoleHoverDepth = mathMax(0, consoleHoverDepth - 1)
+		end
+		if dm_handle then
+			dm_handle.hoverConsoleArea = (consoleHoverDepth > 0)
+		end
+	end,
 }
+
+local function getInputText()
+	return (dm_handle and dm_handle.inputText) or ""
+end
+
+local function setInputText(value)
+	value = stripColorCodes(value or "")
+	if string.len(value) > maxTextInputChars then
+		value = string.sub(value, 1, maxTextInputChars)
+	end
+	if dm_handle then
+		dm_handle.inputText = value
+	end
+	return value
+end
 
 local function setCurrentChatLine(line)
 	local i = line
@@ -512,7 +555,7 @@ local function getPlayerNameStyle(name)
 	local r = mathFloor((color[1] or 1) * 255 + 0.5)
 	local g = mathFloor((color[2] or 1) * 255 + 0.5)
 	local b = mathFloor((color[3] or 1) * 255 + 0.5)
-	return string.format("rgb(%d, %d, %d);", r, g, b)
+	return string.format("rgb(%d, %d, %d)", r, g, b)
 end
 
 local function formatSystemMessage(i18nKey, playername, gameFrame, extraParams)
@@ -772,20 +815,28 @@ local function cancelChatInput()
 		historyMode = false
 		setCurrentChatLine(#chatLines)
 	end
-	inputText = ''
+	setInputText('')
 	inputTextPosition = 0
 	inputSelectionStart = nil
 	inputTextInsertActive = false
 	inputHistoryCurrent = #inputHistory
 	autocompleteText = nil
 	autocompleteWords = {}
+	chatInputFocused = false
+	pendingInputFocus = false
+	rootHoverDepth = 0
+	consoleHoverDepth = 0
+	if dm_handle then
+		dm_handle.hoverWidgetArea = false
+		dm_handle.hoverConsoleArea = false
+	end
 	Spring.SDLStopTextInput()
 	widgetHandler.textOwner = nil
 	needsUiRefresh = true
 end
 
 local function clearChatInput()
-	inputText = ''
+	setInputText('')
 	inputTextPosition = 0
 	inputSelectionStart = nil
 	inputTextInsertActive = false
@@ -848,7 +899,8 @@ local function autocomplete(text, fresh)
 		words[#words + 1] = word
 		letters = word
 	end
-	if string.sub(inputText, #text) == ' ' then
+	local t = getInputText()
+	if string.sub(t, #text) == ' ' then
 		letters = letters .. ' '
 		if autocompleteWords[1] then
 			prevAutocompleteLetters = letters
@@ -908,6 +960,7 @@ function widget:AcceptAutocomplete(index)
 		return
 	end
 	local word = autocompleteWords[index]
+	local inputText = getInputText()
 	local letters = ''
 	local isCmd = string.sub(inputText, 1, 1) == '/'
 	for piece in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
@@ -924,6 +977,7 @@ function widget:AcceptAutocomplete(index)
 	else
 		inputText = inputText .. word
 	end
+	inputText = setInputText(inputText)
 	inputTextPosition = utf8.len(inputText)
 	inputHistory[#inputHistory] = inputText
 	autocompleteText = nil
@@ -960,6 +1014,52 @@ function widget:OpenInput(ctrl, alt, shift)
 	end
 	Spring.SDLStartTextInput()
 	needsUiRefresh = true
+end
+
+function widget:HandleChatInputFocus()
+	chatInputFocused = true
+end
+
+function widget:HandleChatInputBlur()
+	chatInputFocused = false
+end
+
+function widget:handleKey(event, elm)
+	if RmlUi.key_identifier().ESCAPE == event.parameters.key_identifier then
+		local inputText = elm:GetAttribute("value")
+		if inputText == "" then
+			elm:Blur()
+		else
+			elm:SetAttribute("value", "")
+			widget:filterList(event, elm)
+		end
+	end
+end
+
+function widget:HandleChatInputChange(ev, elm)
+	Spring.Echo("Handle ChatInputChange")
+	Spring.Echo(ev.parameters.value)
+end
+
+function widget:HandleChatInputText(ev, elm)
+	Spring.Echo("Handle ChatInputText")
+	Spring.Echo(ev.parameters.text)
+end
+
+function widget:HandleChatInputKey(ev, elm)
+	Spring.Echo("Handle ChatInputkey")
+	Spring.Echo(ev.parameters.key_identifier)
+	local key = ev.parameters.key_identifier
+	if key == KEYSYMS.RETURN or key == KEYSYMS.ESCAPE or key == KEYSYMS.UP or key == KEYSYMS.DOWN or key == KEYSYMS.TAB then
+		widget:KeyPress(key, true)
+		if showTextInput then
+			elm:Focus()
+		else
+			elm:Blur()
+		end
+		return true
+	end
+	return false
 end
 
 local function sliceRows(source, startIndex, count, predicate)
@@ -1026,6 +1126,7 @@ local function consoleRowToView(index, row, history)
 end
 
 local function currentModeLabel()
+	local inputText = getInputText()
 	local isCmd = string.sub(inputText, 1, 1) == '/'
 	if isCmd then
 		return I18N.cmd
@@ -1042,6 +1143,7 @@ local function buildAutocompleteRows()
 	if not autocompleteText or not autocompleteWords[2] then
 		return rows
 	end
+	local inputText = getInputText()
 	local letters = ''
 	local isCmd = string.sub(inputText, 1, 1) == '/'
 	for word in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
@@ -1082,8 +1184,43 @@ local function refreshRootStyle()
 	root.style.height = tostring(activationArea[4] - activationArea[2]) .. "px"
 end
 
+local function getChatInputElement()
+	if not document then
+		return nil
+	end
+	return document:GetElementById("chat-input")
+end
+
+local function syncInputFromModel()
+	local inputText = setInputText(getInputText())
+	inputTextPosition = utf8.len(inputText)
+	inputSelectionStart = nil
+	inputHistory[#inputHistory] = inputText
+	cursorBlinkTimer = 0
+	autocomplete(inputText, true)
+	needsUiRefresh = true
+	return true
+end
+
+local function focusChatInputElement()
+	Spring.Echo("focusing")
+	if not showTextInput then
+		return
+	end
+	local inputElement = getChatInputElement()
+	if not inputElement then
+		pendingInputFocus = true
+		return
+	end
+	Spring.Echo("focusing e")
+	inputElement:Focus(true)
+	chatInputFocused = true
+	pendingInputFocus = false
+	Spring.Echo("focusing done")
+end
+
 local function refreshDocumentModel()
-	if not dm then
+	if not dm_handle then
 		return
 	end
 	local now = os.clock()
@@ -1162,32 +1299,37 @@ local function refreshDocumentModel()
 		if currentChatLine < lastUnignoredChatLineID and (now - chatLines[lastUnignoredChatLineID].startTime < lineTTL) then
 			showNewChatNotice = true
 			newChatNotice = (chatLines[lastUnignoredChatLineID].playerNameText or '') ..
-			": " .. (chatLines[lastUnignoredChatLineID].text or '')
+				": " .. (chatLines[lastUnignoredChatLineID].text or '')
 		end
 	end
 
-	dm.rootVisible = (not hide and (#chatRows > 0 or #consoleRows > 0 or showTextInput)) or historyMode
-	dm.showConsoleStack = (not historyMode and not hide and #consoleRows > 0)
-	dm.showChatStack = (not hide and (#chatRows > 0 or showTextInput)) and not historyMode
-	dm.showHistoryPanel = historyMode and true or false
-	dm.isHistoryChat = historyMode == 'chat'
-	dm.isHistoryConsole = historyMode == 'console'
-	dm.showTextInput = showTextInput and handleTextInput
-	dm.showInputButton = inputButton and handleTextInput
-	dm.showAutocomplete = showTextInput and autocompleteText ~= nil
-	dm.showAutocompleteList = showTextInput and autocompleteText ~= nil and autocompleteWords[2] ~= nil
-	dm.showNewChatNotice = showNewChatNotice
-	dm.noHistory = (#historyRows == 0)
-	dm.historyTitle = historyMode == 'console' and 'Console' or 'Chat'
-	dm.shortcutText = I18N.shortcut or ''
-	dm.modeLabel = currentModeLabel()
-	dm.inputText = inputText
-	dm.autocompleteTail = autocompleteText or ''
-	dm.newChatNotice = newChatNotice
-	dm.chatRows = chatRows
-	dm.consoleRows = consoleRows
-	dm.historyRows = historyRows
-	dm.autocompleteRows = buildAutocompleteRows()
+	dm_handle.rootVisible = (not hide and (#chatRows > 0 or #consoleRows > 0 or showTextInput)) or historyMode
+	dm_handle.showConsoleStack = (not historyMode and not hide and #consoleRows > 0)
+	dm_handle.showChatStack = (not hide and (#chatRows > 0 or showTextInput)) and not historyMode
+	dm_handle.showHistoryPanel = historyMode and true or false
+	dm_handle.isHistoryChat = historyMode == 'chat'
+	dm_handle.isHistoryConsole = historyMode == 'console'
+	dm_handle.showTextInput = showTextInput and handleTextInput
+	dm_handle.showInputButton = inputButton and handleTextInput
+	dm_handle.showAutocomplete = showTextInput and autocompleteText ~= nil
+	dm_handle.showAutocompleteList = showTextInput and autocompleteText ~= nil and autocompleteWords[2] ~= nil
+	dm_handle.showNewChatNotice = showNewChatNotice
+	dm_handle.noHistory = (#historyRows == 0)
+	dm_handle.historyTitle = historyMode == 'console' and 'Console' or 'Chat'
+	dm_handle.historyChatLabel = 'Chat'
+	dm_handle.historyConsoleLabel = 'Console'
+	dm_handle.historyCloseLabel = 'Close'
+	dm_handle.historyHelp = 'Mouse wheel scrolls. Ctrl+Shift also opens history.'
+	dm_handle.historyOlderLabel = 'Older'
+	dm_handle.historyNewerLabel = 'Newer'
+	dm_handle.shortcutText = I18N.shortcut or ''
+	dm_handle.modeLabel = currentModeLabel()
+	dm_handle.autocompleteTail = autocompleteText or ''
+	dm_handle.newChatNotice = newChatNotice
+	dm_handle.chatRows = chatRows
+	dm_handle.consoleRows = consoleRows
+	dm_handle.historyRows = historyRows
+	dm_handle.autocompleteRows = buildAutocompleteRows()
 	refreshRootStyle()
 	needsUiRefresh = false
 end
@@ -1400,31 +1542,24 @@ function widget:Update(dt)
 		end
 	end
 
-	local x, y = spGetMouseState()
-	local hoveredHistory = false
 	if WG['topbar'] and WG['topbar'].showingQuit() then
 		historyMode = false
 		setCurrentChatLine(#chatLines)
-	elseif x >= activationArea[1] and y >= activationArea[2] and x <= activationArea[3] and y <= activationArea[4] then
+	elseif dm_handle and dm_handle.hoverWidgetArea then
 		local alt, ctrl, meta, shift = Spring.GetModKeyState()
 		if showHistoryWhenCtrlShift and ctrl and shift then
-			if x >= consoleActivationArea[1] and y >= consoleActivationArea[2] and x <= consoleActivationArea[3] and y <= consoleActivationArea[4] then
+			if dm_handle.hoverConsoleArea then
 				historyMode = 'console'
 			else
 				historyMode = 'chat'
 			end
 			maxLinesScroll = maxLinesScrollFull
 		end
-		hoveredHistory = historyMode and true or false
 	elseif historyMode then
 		if not showHistoryWhenChatInput or not showTextInput then
 			historyMode = false
 			setCurrentChatLine(#chatLines)
 		end
-	end
-	if hoveredHistory ~= prevHoveredHistory then
-		needsUiRefresh = true
-		prevHoveredHistory = hoveredHistory
 	end
 
 	if #consoleLines > consoleLineCleanupTarget * 1.15 then
@@ -1457,6 +1592,7 @@ end
 
 function widget:TextInput(char)
 	if handleTextInput and not chobbyInterface and not Spring.IsGUIHidden() and showTextInput then
+		local inputText = getInputText()
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
 			local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1479,6 +1615,7 @@ function widget:TextInput(char)
 				inputTextPosition = maxTextInputChars
 			end
 		end
+		inputText = setInputText(inputText)
 		inputHistory[#inputHistory] = inputText
 		cursorBlinkTimer = 0
 		autocomplete(inputText)
@@ -1498,6 +1635,7 @@ function widget:KeyPress(key)
 	if Spring.IsGUIHidden() or not handleTextInput then
 		return
 	end
+	local inputText = getInputText()
 	local alt, ctrl, _, shift = Spring.GetModKeyState()
 	if key == KEYSYMS.RETURN then
 		if showTextInput then
@@ -1543,6 +1681,7 @@ function widget:KeyPress(key)
 		return false
 	end
 	if ctrl and key == KEYSYMS.V then
+		Spring.Echo("PASTE")
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
 			local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1560,6 +1699,7 @@ function widget:KeyPress(key)
 				inputTextPosition = maxTextInputChars
 			end
 		end
+		inputText = setInputText(inputText)
 		inputHistory[#inputHistory] = inputText
 		cursorBlinkTimer = 0
 		autocomplete(inputText, true)
@@ -1577,6 +1717,7 @@ function widget:KeyPress(key)
 			local selectedText = utf8.sub(inputText, selStart + 1, selEnd)
 			spSetClipboard(selectedText)
 			inputText = utf8.sub(inputText, 1, selStart) .. utf8.sub(inputText, selEnd + 1)
+			inputText = setInputText(inputText)
 			inputTextPosition = selStart
 			inputSelectionStart = nil
 			inputHistory[#inputHistory] = inputText
@@ -1584,6 +1725,7 @@ function widget:KeyPress(key)
 			autocomplete(inputText, true)
 		end
 	elseif ctrl and key == KEYSYMS.A then
+		Spring.Echo("ALL")
 		inputSelectionStart = 0
 		inputTextPosition = utf8.len(inputText)
 		cursorBlinkTimer = 0
@@ -1630,12 +1772,14 @@ function widget:KeyPress(key)
 				local selStart = mathMin(inputSelectionStart, inputTextPosition)
 				local selEnd = mathMax(inputSelectionStart, inputTextPosition)
 				inputText = utf8.sub(inputText, 1, selStart) .. utf8.sub(inputText, selEnd + 1)
+				inputText = setInputText(inputText)
 				inputTextPosition = selStart
 				inputSelectionStart = nil
 				inputHistory[#inputHistory] = inputText
 				prevAutocompleteLetters = nil
 			elseif inputTextPosition > 0 then
 				inputText = utf8.sub(inputText, 1, inputTextPosition - 1) .. utf8.sub(inputText, inputTextPosition + 1)
+				inputText = setInputText(inputText)
 				inputTextPosition = inputTextPosition - 1
 				inputHistory[#inputHistory] = inputText
 				if not (prevAutocompleteLetters and inputTextPosition == #inputText and string.sub(inputText, #inputText) ~= ' ') then
@@ -1649,11 +1793,13 @@ function widget:KeyPress(key)
 				local selStart = mathMin(inputSelectionStart, inputTextPosition)
 				local selEnd = mathMax(inputSelectionStart, inputTextPosition)
 				inputText = utf8.sub(inputText, 1, selStart) .. utf8.sub(inputText, selEnd + 1)
+				inputText = setInputText(inputText)
 				inputTextPosition = selStart
 				inputSelectionStart = nil
 				inputHistory[#inputHistory] = inputText
 			elseif inputTextPosition < utf8.len(inputText) then
 				inputText = utf8.sub(inputText, 1, inputTextPosition) .. utf8.sub(inputText, inputTextPosition + 2)
+				inputText = setInputText(inputText)
 				inputHistory[#inputHistory] = inputText
 			end
 			cursorBlinkTimer = 0
@@ -1708,6 +1854,7 @@ function widget:KeyPress(key)
 			end
 			if inputHistory[inputHistoryCurrent] then
 				inputText = inputHistory[inputHistoryCurrent]
+				inputText = setInputText(inputText)
 				inputHistory[#inputHistory] = inputText
 			end
 			inputTextPosition = utf8.len(inputText)
@@ -1720,6 +1867,7 @@ function widget:KeyPress(key)
 				inputHistoryCurrent = #inputHistory
 			end
 			inputText = inputHistory[inputHistoryCurrent] or ''
+			inputText = setInputText(inputText)
 			inputTextPosition = utf8.len(inputText)
 			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
@@ -1727,13 +1875,17 @@ function widget:KeyPress(key)
 			inputSelectionStart = nil
 			if autocompleteText then
 				inputText = utf8.sub(inputText, 1, inputTextPosition) ..
-				autocompleteText .. utf8.sub(inputText, inputTextPosition + 1)
+					autocompleteText .. utf8.sub(inputText, inputTextPosition + 1)
+				inputText = setInputText(inputText)
 				inputTextPosition = inputTextPosition + utf8.len(autocompleteText)
 				inputHistory[#inputHistory] = inputText
 				autocompleteText = nil
 				autocompleteWords = {}
 			end
 		end
+	end
+	if showTextInput then
+		setInputText(inputText)
 	end
 	needsUiRefresh = true
 	return true
@@ -1750,8 +1902,7 @@ function widget:MouseWheel(up)
 end
 
 function widget:WorldTooltip()
-	local x, y = spGetMouseState()
-	if #chatLines > 0 and x >= activationArea[1] and y >= activationArea[2] and x <= activationArea[3] and y <= activationArea[4] then
+	if dm_handle and dm_handle.hoverWidgetArea and #chatLines > 0 then
 		return I18N.scroll
 	end
 end
@@ -1788,7 +1939,7 @@ function widget:ViewResize()
 		posY2 = mathFloor(topbarArea[2] - 4) / vsy
 		posX = topbarArea[1] / vsx
 		scrollingPosY = mathFloor(topbarArea[2] - 4 - backgroundPadding - backgroundPadding -
-		(lineHeight * maxLinesScroll)) / vsy
+			(lineHeight * maxLinesScroll)) / vsy
 	end
 	consolePosY = mathFloor((vsy * posY2) - backgroundPadding - (maxConsoleLines * consoleLineHeight)) / vsy
 	posY = mathFloor((consolePosY * vsy) - (backgroundPadding * 1.5) - ((lineHeight * maxLines))) / vsy
@@ -1796,12 +1947,6 @@ function widget:ViewResize()
 	activationArea = {
 		mathFloor(vsx * posX),
 		mathFloor(vsy * posY),
-		mathFloor(vsx * posX2),
-		mathFloor(vsy * posY2),
-	}
-	consoleActivationArea = {
-		mathFloor(vsx * posX),
-		mathFloor(vsy * consolePosY),
 		mathFloor(vsx * posX2),
 		mathFloor(vsy * posY2),
 	}
@@ -1872,7 +2017,7 @@ function widget:Initialize()
 			else
 				local name, _, spec = spGetPlayerInfo(playerID, false)
 				name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
-				name
+					name
 				if not spec then
 					teamNames[teamID] = name
 				end
@@ -1887,8 +2032,8 @@ function widget:Initialize()
 	Spring.SendCommands("console 0")
 
 	context = RmlUi.GetContext("shared")
-	dm = context:OpenDataModel(modelName, dataModel)
-	if not dm then
+	dm_handle = context:OpenDataModel(modelName, dataModel)
+	if not dm_handle then
 		spEcho("RmlUi: failed to open data model", modelName)
 		return
 	end
@@ -1896,7 +2041,7 @@ function widget:Initialize()
 	if not document then
 		spEcho("RmlUi: failed to load chat document")
 		context:RemoveDataModel(modelName)
-		dm = nil
+		dm_handle = nil
 		return
 	end
 	document:Show()
@@ -1976,9 +2121,9 @@ function widget:Shutdown()
 		document:Close()
 		document = nil
 	end
-	if context and dm then
+	if context and dm_handle then
 		context:RemoveDataModel(modelName)
-		dm = nil
+		dm_handle = nil
 	end
 	widgetHandler.actionHandler:RemoveAction(self, "clearconsole")
 	widgetHandler.actionHandler:RemoveAction(self, "hidespecchat")

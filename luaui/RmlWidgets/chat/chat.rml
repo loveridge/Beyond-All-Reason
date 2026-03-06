@@ -106,6 +106,7 @@
 			.text {
 				flex: 1;
 				white-space: normal;
+				/*word-break: break-word;*/
 			}
 
 			.history-panel {
@@ -187,31 +188,11 @@
 				border-radius: 6dp;
 				padding: 8dp 10dp;
 				background-color: rgba(0, 0, 0, 120);
-				white-space: pre-wrap;
+				color: #f1f1f1;
 			}
 
-			.input-view.empty {
-				color: #7b7b7b;
-			}
-
-			.input-tail {
-				color: rgba(255, 255, 255, 90);
-			}
-
-			.caret {
-				display: inline-block;
-				width: 1dp;
-				height: 1em;
-				background-color: rgba(255, 255, 255, 200);
-				vertical-align: bottom;
-				margin-left: 2dp;
-				animation: blink 1s step-start infinite;
-			}
-
-			@keyframes blink {
-				0% { opacity: 1; }
-				50% { opacity: 0; }
-				100% { opacity: 1; }
+			input.input-view {
+				caret-color: #ffffff;
 			}
 
 			.autocomplete-panel {
@@ -242,8 +223,12 @@
 	</head>
 
 	<body>
-		<div id="chat-root" data-model="chat_rml_data" data-if="rootVisible">
-			<div class="stack console" data-if="showConsoleStack">
+		<div id="chat-root" data-model="chat_rml_data" data-if="rootVisible"
+			data-event-mouseover="setWidgetHover(true)"
+			data-event-mouseout="setWidgetHover(false)">
+			<div class="stack console" data-if="showConsoleStack"
+				data-event-mouseover="setConsoleHover(true)"
+				data-event-mouseout="setConsoleHover(false)">
 				<div class="lines">
 					<div class="line console-row" data-for="row, i: consoleRows">
 						<span class="text">{{row.text}}</span>
@@ -272,9 +257,9 @@
 			<div id="chat-history-panel" class="history-panel" data-if="showHistoryPanel">
 				<div class="history-header">
 					<span class="history-title">{{historyTitle}}</span>
-					<button data-class-active="isHistoryChat" data-event-click="setHistoryMode('chat')">Chat</button>
-					<button data-class-active="isHistoryConsole" data-event-click="setHistoryMode('console')">Console</button>
-					<button data-event-click="clearHistoryMode()">Close</button>
+					<button data-class-active="isHistoryChat" data-event-click="setHistoryMode('chat')">{{historyChatLabel}}</button>
+					<button data-class-active="isHistoryConsole" data-event-click="setHistoryMode('console')">{{historyConsoleLabel}}</button>
+					<button data-event-click="clearHistoryMode()">{{historyCloseLabel}}</button>
 				</div>
 				<div class="history-list" data-if="!noHistory">
 					<div class="lines">
@@ -296,9 +281,9 @@
 				</div>
 				<div class="no-history" data-if="noHistory">{{shortcutText}}</div>
 				<div class="history-footer">
-					<span class="history-help">Mouse wheel scrolls. Ctrl+Shift also opens history.</span>
-					<button data-event-click="scrollHistory(-1)">Older</button>
-					<button data-event-click="scrollHistory(1)">Newer</button>
+					<span class="history-help">{{historyHelp}}</span>
+					<button data-event-click="scrollHistory(-1)">{{historyOlderLabel}}</button>
+					<button data-event-click="scrollHistory(1)">{{historyNewerLabel}}</button>
 				</div>
 			</div>
 
