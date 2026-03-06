@@ -277,7 +277,7 @@
 						data-class-system-row="row.isSystem"
 						data-class-console-row="row.isConsole"
 						data-class-clickable="row.clickable"
-						data-event-click="activateChatLine(row.sourceIndex)">
+						data-event-click="activateChatLine(i)">
 						<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 						<span class="sep">{{row.separator}}</span>
 						<span class="text">{{row.text}}</span>
@@ -302,7 +302,7 @@
 							data-class-system-row="row.isSystem"
 							data-class-console-row="row.isConsole"
 							data-class-clickable="row.clickable"
-							data-event-click="activateChatLine(row.sourceIndex)">
+							data-event-click="activateChatLine(i)">
 							<span class="timestamp">{{row.timestamp}}</span>
 							<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 							<span class="sep">{{row.separator}}</span>

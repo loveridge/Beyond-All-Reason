@@ -356,7 +356,8 @@ local dataModel = {
 		end
 		widget:ScrollHistory(delta < 0, math.abs(delta))
 	end,
-	activateChatLine = function(index)
+	activateChatLine = function(ev, index)
+		Spring.Echo("toggle", index, ev.type, ev.parameters.button, ev.parameters.mouse_x)
 		widget:ActivateChatLine(tonumber(index) or 0)
 	end,
 	acceptAutocomplete = function(index)
@@ -550,7 +551,7 @@ local function getPlayerNameStyle(name)
 	local playerData = playernames[name]
 	local color = playerData and playerData[5]
 	if not color then
-		return ""
+		return "rgb(255,255,255)"
 	end
 	local r = mathFloor((color[1] or 1) * 255 + 0.5)
 	local g = mathFloor((color[2] or 1) * 255 + 0.5)
@@ -628,7 +629,9 @@ local function addChatLine(gameFrame, lineType, name, nameText, text, orgLineID,
 		entry.clickable = true
 		lastLineUnitShare = nil
 	end
-	chatLines[#chatLines + 1] = entry
+	local id = #chatLines + 1
+	entry.id = id
+	chatLines[id] = entry
 	if historyMode ~= 'chat' and not ignore then
 		setCurrentChatLine(#chatLines)
 	end
@@ -942,7 +945,11 @@ local function autocomplete(text, fresh)
 end
 
 function widget:ActivateChatLine(index)
-	local line = chatLines[index]
+	local shownCount = #(dm_handle.chatRows.__raw())
+	local line = chatLines[currentChatLine - (shownCount - index - 1)]
+	-- Spring.Echo(chatLines)
+	-- Spring.Echo(index + 1, currentChatLine, #chatLines, maxLines, shownCount)
+	-- Spring.Echo(line)
 	if not line then
 		return
 	end
