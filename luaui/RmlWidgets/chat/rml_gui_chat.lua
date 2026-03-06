@@ -40,6 +40,7 @@ local spSetClipboard = Spring.SetClipboard
 
 local utf8 = VFS.Include('common/luaUtilities/utf8.lua')
 local badWords = VFS.Include('luaui/configs/badwords.lua')
+include("keysym.h.lua")
 
 local L_DEPRECATED = LOG and LOG.DEPRECATED
 local isDevSingle = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.Gametype and Spring.Utilities.Gametype.IsSinglePlayer and (Spring.Utilities.IsDevMode() and Spring.Utilities.Gametype.IsSinglePlayer())
@@ -1453,7 +1454,7 @@ function widget:KeyPress(key)
 		return
 	end
 	local alt, ctrl, _, shift = Spring.GetModKeyState()
-	if key == 13 then
+	if key == KEYSYMS.RETURN then
 		if showTextInput then
 			if ctrl or alt or shift then
 				if ctrl then
@@ -1494,7 +1495,7 @@ function widget:KeyPress(key)
 	if not showTextInput then
 		return false
 	end
-	if ctrl and key == 118 then
+	if ctrl and key == KEYSYMS.V then
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
 			local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1514,14 +1515,14 @@ function widget:KeyPress(key)
 		inputHistory[#inputHistory] = inputText
 		cursorBlinkTimer = 0
 		autocomplete(inputText, true)
-	elseif ctrl and key == 99 then
+	elseif ctrl and key == KEYSYMS.C then
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
 			local selEnd = mathMax(inputSelectionStart, inputTextPosition)
 			local selectedText = utf8.sub(inputText, selStart + 1, selEnd)
 			spSetClipboard(selectedText)
 		end
-	elseif ctrl and key == 120 then
+	elseif ctrl and key == KEYSYMS.X then
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
 			local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1534,11 +1535,11 @@ function widget:KeyPress(key)
 			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
 		end
-	elseif ctrl and key == 97 then
+	elseif ctrl and key == KEYSYMS.A then
 		inputSelectionStart = 0
 		inputTextPosition = utf8.len(inputText)
 		cursorBlinkTimer = 0
-	elseif ctrl and key == 276 then
+	elseif ctrl and key == KEYSYMS.LEFT then
 		if shift then
 			if not inputSelectionStart then
 				inputSelectionStart = inputTextPosition
@@ -1555,7 +1556,7 @@ function widget:KeyPress(key)
 		end
 		inputTextPosition = pos
 		cursorBlinkTimer = 0
-	elseif ctrl and key == 275 then
+	elseif ctrl and key == KEYSYMS.RIGHT then
 		if shift then
 			if not inputSelectionStart then
 				inputSelectionStart = inputTextPosition
@@ -1574,9 +1575,9 @@ function widget:KeyPress(key)
 		inputTextPosition = pos
 		cursorBlinkTimer = 0
 	elseif not alt and not ctrl then
-		if key == 27 then
+		if key == KEYSYMS.ESCAPE then
 			cancelChatInput()
-		elseif key == 8 then
+		elseif key == KEYSYMS.BACKSPACE then
 			if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 				local selStart = mathMin(inputSelectionStart, inputTextPosition)
 				local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1595,7 +1596,7 @@ function widget:KeyPress(key)
 			end
 			cursorBlinkTimer = 0
 			autocomplete(inputText, not prevAutocompleteLetters)
-		elseif key == 127 then
+		elseif key == KEYSYMS.DELETE then
 			if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 				local selStart = mathMin(inputSelectionStart, inputTextPosition)
 				local selEnd = mathMax(inputSelectionStart, inputTextPosition)
@@ -1609,9 +1610,9 @@ function widget:KeyPress(key)
 			end
 			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
-		elseif key == 277 then
+		elseif key == KEYSYMS.INSERT then
 			inputTextInsertActive = not inputTextInsertActive
-		elseif key == 276 then
+		elseif key == KEYSYMS.LEFT then
 			if shift then
 				if not inputSelectionStart then
 					inputSelectionStart = inputTextPosition
@@ -1621,7 +1622,7 @@ function widget:KeyPress(key)
 			end
 			inputTextPosition = mathMax(0, inputTextPosition - 1)
 			cursorBlinkTimer = 0
-		elseif key == 275 then
+		elseif key == KEYSYMS.RIGHT then
 			if shift then
 				if not inputSelectionStart then
 					inputSelectionStart = inputTextPosition
@@ -1631,7 +1632,7 @@ function widget:KeyPress(key)
 			end
 			inputTextPosition = mathMin(utf8.len(inputText), inputTextPosition + 1)
 			cursorBlinkTimer = 0
-		elseif key == 278 or key == 280 then
+		elseif key == KEYSYMS.HOME or key == KEYSYMS.PAGEUP then
 			if shift then
 				if not inputSelectionStart then
 					inputSelectionStart = inputTextPosition
@@ -1641,7 +1642,7 @@ function widget:KeyPress(key)
 			end
 			inputTextPosition = 0
 			cursorBlinkTimer = 0
-		elseif key == 279 or key == 281 then
+		elseif key == KEYSYMS.END or key == KEYSYMS.PAGEDOWN then
 			if shift then
 				if not inputSelectionStart then
 					inputSelectionStart = inputTextPosition
@@ -1651,7 +1652,7 @@ function widget:KeyPress(key)
 			end
 			inputTextPosition = utf8.len(inputText)
 			cursorBlinkTimer = 0
-		elseif key == 273 then
+		elseif key == KEYSYMS.UP then
 			inputSelectionStart = nil
 			inputHistoryCurrent = inputHistoryCurrent - 1
 			if inputHistoryCurrent < 1 then
@@ -1664,7 +1665,7 @@ function widget:KeyPress(key)
 			inputTextPosition = utf8.len(inputText)
 			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
-		elseif key == 274 then
+		elseif key == KEYSYMS.DOWN then
 			inputSelectionStart = nil
 			inputHistoryCurrent = inputHistoryCurrent + 1
 			if inputHistoryCurrent >= #inputHistory then
@@ -1674,7 +1675,7 @@ function widget:KeyPress(key)
 			inputTextPosition = utf8.len(inputText)
 			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
-		elseif key == 9 then
+		elseif key == KEYSYMS.TAB then
 			inputSelectionStart = nil
 			if autocompleteText then
 				inputText = utf8.sub(inputText, 1, inputTextPosition) .. autocompleteText .. utf8.sub(inputText, inputTextPosition + 1)
