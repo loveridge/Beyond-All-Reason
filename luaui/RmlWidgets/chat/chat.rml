@@ -1,0 +1,323 @@
+<rml>
+	<head>
+		<title>Chat</title>
+		<link type="text/rcss" href="/LuaUi/RmlWidgets/styles/styles.rcss" />
+		<link type="text/rcss" href="../styles/rml-utils.rcss" />
+		<link type="text/rcss" href="../styles/palette-standard-global.rcss" />
+		<link type="text/rcss" href="../styles/starter.rcss" />
+		<style>
+			body {
+				font-family: Exo 2;
+				font-size: 16px;
+				color: #e8e8e8;
+			}
+
+			#chat-root {
+				position: fixed;
+				pointer-events: auto;
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-end;
+				gap: 8px;
+			}
+
+			.stack, .history-panel, .input-bar, .autocomplete-panel, .new-chat {
+				background-color: rgba(0, 0, 0, 180);
+				border: 1dp rgba(255, 255, 255, 35);
+				border-radius: 8dp;
+				padding: 8dp;
+				backdrop-filter: none;
+			}
+
+			.stack.console {
+				align-self: stretch;
+				opacity: 0.9;
+			}
+
+			.stack.chat {
+				align-self: stretch;
+			}
+
+			.lines {
+				display: flex;
+				flex-direction: column;
+				gap: 4dp;
+			}
+
+			.line {
+				display: flex;
+				flex-direction: row;
+				align-items: flex-start;
+				gap: 5dp;
+				padding: 2dp 4dp;
+				border-radius: 4dp;
+			}
+
+			.line.console-row {
+				color: #d7d7d7;
+			}
+
+			.line.player-row .speaker {
+				color: #ffffff;
+			}
+
+			.line.spectator-row .speaker,
+			.line.spectator-row .text {
+				color: #f4ea94;
+			}
+
+			.line.system-row .speaker,
+			.line.system-row .text {
+				color: #9be7ff;
+			}
+
+			.line.mapmark-row .speaker,
+			.line.mapmark-row .text {
+				color: #ffd7a1;
+			}
+
+			.line.clickable:hover {
+				background-color: rgba(255, 255, 255, 18);
+			}
+
+			.timestamp {
+				width: 44dp;
+				color: #c0c0c0;
+				text-align: right;
+				flex-shrink: 0;
+			}
+
+			.speaker {
+				min-width: 100dp;
+				max-width: 180dp;
+				text-align: right;
+				flex-shrink: 0;
+				white-space: nowrap;
+				overflow: hidden;
+			}
+
+			.sep {
+				width: 10dp;
+				color: #c7c7c7;
+				text-align: center;
+				flex-shrink: 0;
+			}
+
+			.text {
+				flex: 1;
+				white-space: normal;
+				word-wrap: break-word;
+			}
+
+			.history-panel {
+				align-self: stretch;
+				max-height: 460px;
+				display: flex;
+				flex-direction: column;
+				gap: 8dp;
+			}
+
+			.history-header {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				gap: 6dp;
+			}
+
+			.history-title {
+				font-size: 18px;
+				color: #ffffff;
+				margin-right: auto;
+			}
+
+			button {
+				background-color: rgba(255, 255, 255, 16);
+				border: 1dp rgba(255, 255, 255, 40);
+				border-radius: 6dp;
+				padding: 5dp 8dp;
+				color: #f1f1f1;
+			}
+
+			button:hover {
+				background-color: rgba(255, 255, 255, 28);
+			}
+
+			button.active {
+				background-color: rgba(110, 180, 255, 52);
+				border: 1dp rgba(110, 180, 255, 110);
+			}
+
+			.history-list {
+				overflow-y: scroll;
+				max-height: 360px;
+			}
+
+			.no-history {
+				color: #9a9a9a;
+				text-align: center;
+				padding: 16dp 8dp;
+			}
+
+			.history-footer {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				gap: 8dp;
+			}
+
+			.history-help {
+				color: #8a8a8a;
+				margin-right: auto;
+			}
+
+			.input-bar {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				gap: 8dp;
+			}
+
+			.mode-button {
+				min-width: 100dp;
+				text-align: center;
+			}
+
+			.input-view {
+				flex: 1;
+				border: 1dp rgba(255, 255, 255, 24);
+				border-radius: 6dp;
+				padding: 8dp 10dp;
+				background-color: rgba(0, 0, 0, 120);
+				white-space: pre-wrap;
+				word-wrap: break-word;
+			}
+
+			.input-view.empty {
+				color: #7b7b7b;
+			}
+
+			.input-tail {
+				color: rgba(255, 255, 255, 90);
+			}
+
+			.caret {
+				display: inline-block;
+				width: 1dp;
+				height: 1em;
+				background-color: rgba(255, 255, 255, 200);
+				vertical-align: bottom;
+				margin-left: 2dp;
+				animation: blink 1s step-start infinite;
+			}
+
+			@keyframes blink {
+				0% { opacity: 1; }
+				50% { opacity: 0; }
+				100% { opacity: 1; }
+			}
+
+			.autocomplete-panel {
+				display: flex;
+				flex-direction: column;
+				gap: 4dp;
+				max-width: 420dp;
+			}
+
+			.suggestion {
+				padding: 4dp 6dp;
+				border-radius: 4dp;
+			}
+
+			.suggestion:hover {
+				background-color: rgba(255, 255, 255, 14);
+			}
+
+			.suggestion-suffix {
+				color: rgba(255, 255, 255, 85);
+			}
+
+			.new-chat {
+				align-self: stretch;
+				color: #d9edff;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="chat-root" data-model="chat_rml_data" data-if="rootVisible">
+			<div class="stack console" data-if="showConsoleStack">
+				<div class="lines">
+					<div class="line console-row" data-for="row, i: consoleRows">
+						<span class="text">{{row.text}}</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="stack chat" data-if="showChatStack">
+				<div class="lines">
+					<div class="line"
+						data-for="row, i: chatRows"
+						data-class-player-row="row.isPlayer"
+						data-class-spectator-row="row.isSpectator"
+						data-class-mapmark-row="row.isMapmark"
+						data-class-system-row="row.isSystem"
+						data-class-console-row="row.isConsole"
+						data-class-clickable="row.clickable"
+						data-event-click="activateChatLine(row.sourceIndex)">
+						<span class="speaker">{{row.speaker}}</span>
+						<span class="sep">{{row.separator}}</span>
+						<span class="text">{{row.text}}</span>
+					</div>
+				</div>
+			</div>
+
+			<div id="chat-history-panel" class="history-panel" data-if="showHistoryPanel">
+				<div class="history-header">
+					<span class="history-title">{{historyTitle}}</span>
+					<button data-class-active="isHistoryChat" data-event-click="setHistoryMode('chat')">Chat</button>
+					<button data-class-active="isHistoryConsole" data-event-click="setHistoryMode('console')">Console</button>
+					<button data-event-click="clearHistoryMode()">Close</button>
+				</div>
+				<div class="history-list" data-if="!noHistory">
+					<div class="lines">
+						<div class="line"
+							data-for="row, i: historyRows"
+							data-class-player-row="row.isPlayer"
+							data-class-spectator-row="row.isSpectator"
+							data-class-mapmark-row="row.isMapmark"
+							data-class-system-row="row.isSystem"
+							data-class-console-row="row.isConsole"
+							data-class-clickable="row.clickable"
+							data-event-click="activateChatLine(row.sourceIndex)">
+							<span class="timestamp">{{row.timestamp}}</span>
+							<span class="speaker">{{row.speaker}}</span>
+							<span class="sep">{{row.separator}}</span>
+							<span class="text">{{row.text}}</span>
+						</div>
+					</div>
+				</div>
+				<div class="no-history" data-if="noHistory">{{shortcutText}}</div>
+				<div class="history-footer">
+					<span class="history-help">Mouse wheel scrolls. Ctrl+Shift also opens history.</span>
+					<button data-event-click="scrollHistory(-1)">Older</button>
+					<button data-event-click="scrollHistory(1)">Newer</button>
+				</div>
+			</div>
+
+			<div class="new-chat" data-if="showNewChatNotice">{{newChatNotice}}</div>
+
+			<div class="autocomplete-panel" data-if="showAutocompleteList">
+				<div class="suggestion" data-for="row, i: autocompleteRows" data-event-click="acceptAutocomplete(row.index)">
+					<span>{{row.prefix}}</span><span class="suggestion-suffix">{{row.suffix}}</span>
+				</div>
+			</div>
+
+			<div class="input-bar" data-if="showTextInput">
+				<button class="mode-button" data-if="showInputButton" data-event-click="toggleInputMode()">{{modeLabel}}</button>
+				<div class="input-view" data-class-empty="inputText == ''" data-event-click="beginInput()">
+					<span>{{inputText}}</span><span class="input-tail" data-if="showAutocomplete">{{autocompleteTail}}</span><span class="caret"></span>
+				</div>
+			</div>
+		</div>
+	</body>
+</rml>
