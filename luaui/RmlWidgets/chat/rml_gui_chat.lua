@@ -301,12 +301,12 @@ local dataModel = {
 	showNewChatNotice = false,
 	noHistory = false,
 	historyTitle = "",
-	historyChatLabel = "",
-	historyConsoleLabel = "",
-	historyCloseLabel = "",
-	historyHelp = "",
-	historyOlderLabel = "",
-	historyNewerLabel = "",
+	historyChatLabel = "Chat",
+	historyConsoleLabel = "Console",
+	historyCloseLabel = "Close",
+	historyHelp = "Mouse wheel scrolls. Ctrl+Shift also opens history.",
+	historyOlderLabel = "Older",
+	historyNewerLabel = "Newer",
 	shortcutText = "",
 	modeLabel = "",
 	inputText = "",
@@ -1024,44 +1024,6 @@ function widget:HandleChatInputBlur()
 	chatInputFocused = false
 end
 
-function widget:handleKey(event, elm)
-	if RmlUi.key_identifier().ESCAPE == event.parameters.key_identifier then
-		local inputText = elm:GetAttribute("value")
-		if inputText == "" then
-			elm:Blur()
-		else
-			elm:SetAttribute("value", "")
-			widget:filterList(event, elm)
-		end
-	end
-end
-
-function widget:HandleChatInputChange(ev, elm)
-	Spring.Echo("Handle ChatInputChange")
-	Spring.Echo(ev.parameters.value)
-end
-
-function widget:HandleChatInputText(ev, elm)
-	Spring.Echo("Handle ChatInputText")
-	Spring.Echo(ev.parameters.text)
-end
-
-function widget:HandleChatInputKey(ev, elm)
-	Spring.Echo("Handle ChatInputkey")
-	Spring.Echo(ev.parameters.key_identifier)
-	local key = ev.parameters.key_identifier
-	if key == KEYSYMS.RETURN or key == KEYSYMS.ESCAPE or key == KEYSYMS.UP or key == KEYSYMS.DOWN or key == KEYSYMS.TAB then
-		widget:KeyPress(key, true)
-		if showTextInput then
-			elm:Focus()
-		else
-			elm:Blur()
-		end
-		return true
-	end
-	return false
-end
-
 local function sliceRows(source, startIndex, count, predicate)
 	local rows = {}
 	local i = startIndex
@@ -1184,41 +1146,6 @@ local function refreshRootStyle()
 	root.style.height = tostring(activationArea[4] - activationArea[2]) .. "px"
 end
 
-local function getChatInputElement()
-	if not document then
-		return nil
-	end
-	return document:GetElementById("chat-input")
-end
-
-local function syncInputFromModel()
-	local inputText = setInputText(getInputText())
-	inputTextPosition = utf8.len(inputText)
-	inputSelectionStart = nil
-	inputHistory[#inputHistory] = inputText
-	cursorBlinkTimer = 0
-	autocomplete(inputText, true)
-	needsUiRefresh = true
-	return true
-end
-
-local function focusChatInputElement()
-	Spring.Echo("focusing")
-	if not showTextInput then
-		return
-	end
-	local inputElement = getChatInputElement()
-	if not inputElement then
-		pendingInputFocus = true
-		return
-	end
-	Spring.Echo("focusing e")
-	inputElement:Focus(true)
-	chatInputFocused = true
-	pendingInputFocus = false
-	Spring.Echo("focusing done")
-end
-
 local function refreshDocumentModel()
 	if not dm_handle then
 		return
@@ -1316,12 +1243,6 @@ local function refreshDocumentModel()
 	dm_handle.showNewChatNotice = showNewChatNotice
 	dm_handle.noHistory = (#historyRows == 0)
 	dm_handle.historyTitle = historyMode == 'console' and 'Console' or 'Chat'
-	dm_handle.historyChatLabel = 'Chat'
-	dm_handle.historyConsoleLabel = 'Console'
-	dm_handle.historyCloseLabel = 'Close'
-	dm_handle.historyHelp = 'Mouse wheel scrolls. Ctrl+Shift also opens history.'
-	dm_handle.historyOlderLabel = 'Older'
-	dm_handle.historyNewerLabel = 'Newer'
 	dm_handle.shortcutText = I18N.shortcut or ''
 	dm_handle.modeLabel = currentModeLabel()
 	dm_handle.autocompleteTail = autocompleteText or ''

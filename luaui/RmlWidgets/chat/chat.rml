@@ -18,15 +18,21 @@
 				display: flex;
 				flex-direction: column;
 				justify-content: flex-end;
-				gap: 8px;
+				/* gap: 8px; */
 			}
 
-			.stack, .history-panel, .input-bar, .autocomplete-panel, .new-chat {
+			.stack, .history-panel, .input-bar,  .new-chat, .autocomplete-panel {
 				background-color: rgba(0, 0, 0, 180);
 				border: 1dp rgba(255, 255, 255, 35);
 				border-radius: 8dp;
 				padding: 8dp;
+				margin-bottom: 8dp;
 				backdrop-filter: none;
+			}
+
+			.autocomplete-panel {
+				margin-bottom: 0dp;
+				margin-left: 135dp;
 			}
 
 			.stack.console {
@@ -189,10 +195,35 @@
 				padding: 8dp 10dp;
 				background-color: rgba(0, 0, 0, 120);
 				color: #f1f1f1;
+				/* min-height: 1.2em; */
 			}
 
-			input.input-view {
-				caret-color: #ffffff;
+			@keyframes caret-blink {
+				0% {
+					opacity: 1;
+				}
+
+				50% {
+					opacity: 0;
+				}
+
+				100% {
+					opacity: 1;
+				}
+			}
+
+			.caret {
+				display: inline-block;
+				width: 1dp;
+				height: 1em;
+				margin-left: 2dp;
+				background-color: #ffffff;
+				vertical-align: middle;
+				animation:  2s sine infinite caret-blink;
+			}
+
+			.input-tail {
+				color: #8a8a8a;
 			}
 
 			.autocomplete-panel {
@@ -298,7 +329,7 @@
 			<div class="input-bar" data-if="showTextInput">
 				<button class="mode-button" data-if="showInputButton" data-event-click="toggleInputMode()">{{modeLabel}}</button>
 				<div class="input-view" data-class-empty="inputText == ''" data-event-click="beginInput()">
-					<span>{{inputText}}</span><span class="input-tail" data-if="showAutocomplete">{{autocompleteTail}}</span><span class="caret"></span>
+					<span>{{inputText}}</span><span class="caret"></span><span class="input-tail" data-if="showAutocomplete">{{autocompleteTail}}</span>
 				</div>
 			</div>
 		</div>
