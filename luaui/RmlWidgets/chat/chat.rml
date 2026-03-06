@@ -12,9 +12,12 @@
 				color: #e8e8e8;
 			}
 
+			.no-pointer-events {
+				pointer-events: none;
+			}
+
 			#chat-root {
 				position: fixed;
-				pointer-events: auto;
 				display: flex;
 				flex-direction: column;
 				justify-content: flex-end;
@@ -33,6 +36,21 @@
 			.autocomplete-panel {
 				margin-bottom: 0dp;
 				margin-left: 135dp;
+			}
+
+			.persistent-console {
+				position: absolute;
+				width: 600dp;
+				height:800dp;
+				top:50%;
+				pointer-events: none;
+				background-color: rgba(0, 0, 0, 180);
+				border: 1dp rgba(255, 255, 255, 35);
+				border-radius: 8dp;
+				padding: 8dp;
+				margin-bottom: 8dp;
+				backdrop-filter: none;
+				align-self: stretch;
 			}
 
 			.stack.console {
@@ -82,6 +100,9 @@
 				color: #ffd7a1;
 			}
 
+			.line.clickable {
+				pointer-events: auto;
+			}
 			.line.clickable:hover {
 				background-color: rgba(255, 255, 255, 18);
 			}
@@ -254,9 +275,15 @@
 	</head>
 
 	<body>
+		<div data-model="chat_rml_data">
+			{{showTextInput}}
+			{{notHoverable}}
+			{{notHoverable && !showTextInput}}
+		</div>
 		<div id="chat-root" data-model="chat_rml_data" data-if="rootVisible"
 			data-event-mouseover="setWidgetHover(true)"
-			data-event-mouseout="setWidgetHover(false)">
+			data-event-mouseout="setWidgetHover(false)"
+			data-class-no-pointer-events="notHoverable && !showTextInput">
 			<div class="stack console" data-if="showConsoleStack"
 				data-event-mouseover="setConsoleHover(true)"
 				data-event-mouseout="setConsoleHover(false)">
@@ -330,6 +357,15 @@
 				<button class="mode-button" data-if="showInputButton" data-event-click="toggleInputMode()">{{modeLabel}}</button>
 				<div class="input-view" data-class-empty="inputText == ''" data-event-click="beginInput()">
 					<span>{{inputText}}</span><span class="caret"></span><span class="input-tail" data-if="showAutocomplete">{{autocompleteTail}}</span>
+				</div>
+			</div>
+		</div>
+		<div>
+		<div class="persistent-console" data-model="chat_rml_data">
+			<div class="lines" >
+					<div class="line console-row" data-for="row, i: consoleRows">
+						<span class="text">{{row.text}}</span>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -66,7 +66,7 @@ local config = {
 	charSize = 21 - (3.5 * ((vsx / vsy) - 1.78)),
 	consoleFontSizeMult = 0.85,
 	maxLines = 5,
-	maxConsoleLines = 2,
+	maxConsoleLines = 20,
 	maxLinesScrollFull = 16,
 	maxLinesScrollChatInput = 9,
 	lineHeightMult = 1.36,
@@ -299,6 +299,7 @@ local dataModel = {
 	showAutocomplete = false,
 	showAutocompleteList = false,
 	showNewChatNotice = false,
+	notHoverable = true,
 	noHistory = false,
 	historyTitle = "",
 	historyChatLabel = "Chat",
@@ -326,7 +327,7 @@ local dataModel = {
 		end
 		needsUiRefresh = true
 	end,
-	setHistoryMode = function(mode)
+	setHistoryMode = function(ev, mode)
 		if mode == 'chat' or mode == 'console' then
 			historyMode = mode
 			if mode == 'chat' then
@@ -349,7 +350,7 @@ local dataModel = {
 		end
 		needsUiRefresh = true
 	end,
-	scrollHistory = function(delta)
+	scrollHistory = function(ev, delta)
 		delta = tonumber(delta) or 0
 		if delta == 0 then
 			return
@@ -360,13 +361,14 @@ local dataModel = {
 		Spring.Echo("toggle", index, ev.type, ev.parameters.button, ev.parameters.mouse_x)
 		widget:ActivateChatLine(tonumber(index) or 0)
 	end,
-	acceptAutocomplete = function(index)
+	acceptAutocomplete = function(ev, index)
 		widget:AcceptAutocomplete(tonumber(index) or 1)
 	end,
 	beginInput = function()
 		widget:OpenInput(false, false, false)
 	end,
-	setWidgetHover = function(hovering)
+	setWidgetHover = function(ev, hovering)
+		Spring.Echo("Hover", hovering)
 		if hovering then
 			rootHoverDepth = rootHoverDepth + 1
 		else
@@ -376,7 +378,7 @@ local dataModel = {
 			dm_handle.hoverWidgetArea = (rootHoverDepth > 0)
 		end
 	end,
-	setConsoleHover = function(hovering)
+	setConsoleHover = function(ev, hovering)
 		if hovering then
 			consoleHoverDepth = consoleHoverDepth + 1
 		else
@@ -947,9 +949,9 @@ end
 function widget:ActivateChatLine(index)
 	local shownCount = #(dm_handle.chatRows.__raw())
 	local line = chatLines[currentChatLine - (shownCount - index - 1)]
-	-- Spring.Echo(chatLines)
-	-- Spring.Echo(index + 1, currentChatLine, #chatLines, maxLines, shownCount)
-	-- Spring.Echo(line)
+	Spring.Echo(chatLines)
+	Spring.Echo(index + 1, currentChatLine, #chatLines, maxLines, shownCount)
+	Spring.Echo(line)
 	if not line then
 		return
 	end
@@ -1083,6 +1085,7 @@ local function consoleRowToView(index, row, history)
 		timestamp = history and formatGameTime(row.gameFrame) or "",
 		showTimestamp = history and row.gameFrame ~= nil,
 		speaker = "",
+		speakerStyle = "rgb(255,255,255)",
 		separator = "",
 		text = row.text or '',
 		clickable = false,
@@ -1473,16 +1476,16 @@ function widget:Update(dt)
 	if WG['topbar'] and WG['topbar'].showingQuit() then
 		historyMode = false
 		setCurrentChatLine(#chatLines)
-	elseif dm_handle and dm_handle.hoverWidgetArea then
-		local alt, ctrl, meta, shift = Spring.GetModKeyState()
-		if showHistoryWhenCtrlShift and ctrl and shift then
-			if dm_handle.hoverConsoleArea then
-				historyMode = 'console'
-			else
-				historyMode = 'chat'
-			end
-			maxLinesScroll = maxLinesScrollFull
-		end
+		-- elseif dm_handle and dm_handle.hoverWidgetArea then
+		-- 	local alt, ctrl, meta, shift = Spring.GetModKeyState()
+		-- 	if showHistoryWhenCtrlShift and ctrl and shift then
+		-- 		if dm_handle.hoverConsoleArea then
+		-- 			historyMode = 'console'
+		-- 		else
+		-- 			historyMode = 'chat'
+		-- 		end
+		-- 		maxLinesScroll = maxLinesScrollFull
+		-- 	end
 	elseif historyMode then
 		if not showHistoryWhenChatInput or not showTextInput then
 			historyMode = false
@@ -1556,6 +1559,8 @@ function widget:TextInput(char)
 end
 
 function widget:KeyRelease()
+	local alt, ctrl, _, shift = Spring.GetModKeyState()
+	if ctrl and shift then dm_handle.notHoverable = false else dm_handle.notHoverable = true end
 	return false
 end
 
@@ -1565,6 +1570,7 @@ function widget:KeyPress(key)
 	end
 	local inputText = getInputText()
 	local alt, ctrl, _, shift = Spring.GetModKeyState()
+	if ctrl and shift then dm_handle.notHoverable = false else dm_handle.notHoverable = true end
 	if key == KEYSYMS.RETURN then
 		if showTextInput then
 			if ctrl or alt or shift then
