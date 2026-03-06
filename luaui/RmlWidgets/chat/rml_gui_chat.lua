@@ -43,7 +43,9 @@ local badWords = VFS.Include('luaui/configs/badwords.lua')
 include("keysym.h.lua")
 
 local L_DEPRECATED = LOG and LOG.DEPRECATED
-local isDevSingle = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.Gametype and Spring.Utilities.Gametype.IsSinglePlayer and (Spring.Utilities.IsDevMode() and Spring.Utilities.Gametype.IsSinglePlayer())
+local isDevSingle = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.Gametype and
+Spring.Utilities.Gametype.IsSinglePlayer and
+(Spring.Utilities.IsDevMode() and Spring.Utilities.Gametype.IsSinglePlayer())
 
 local LineTypes = {
 	Console = -1,
@@ -70,8 +72,10 @@ local config = {
 	maxLinesScrollChatInput = 9,
 	lineHeightMult = 1.36,
 	lineTTL = 40,
-	consoleLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1200 or 400,
-	orgLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1400 or 600,
+	consoleLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1200 or
+	400,
+	orgLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1400 or
+	600,
 	backgroundOpacity = 0.25,
 	handleTextInput = true,
 	maxTextInputChars = 127,
@@ -154,8 +158,8 @@ local autocompleteWords = {}
 local autocompleteText
 local prevAutocompleteLetters
 local lastMessage
-local activationArea = {0, 0, 0, 0}
-local consoleActivationArea = {0, 0, 0, 0}
+local activationArea = { 0, 0, 0, 0 }
+local consoleActivationArea = { 0, 0, 0, 0 }
 local topbarArea
 local scrollingPosY = 0.66
 local consolePosY = 0.9
@@ -176,15 +180,16 @@ local needsUiRefresh = true
 local uiSec = 0
 local prevHoveredHistory = false
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
-local anonymousTeamColor = {Spring.GetConfigInt("anonymousColorR", 255) / 255, Spring.GetConfigInt("anonymousColorG", 0) / 255, Spring.GetConfigInt("anonymousColorB", 0) / 255}
+local anonymousTeamColor = { Spring.GetConfigInt("anonymousColorR", 255) / 255, Spring.GetConfigInt("anonymousColorG", 0) /
+255, Spring.GetConfigInt("anonymousColorB", 0) / 255 }
 
-local colorOther = {1, 1, 1}
-local colorAlly = {0, 1, 0}
-local colorSpec = {1, 1, 0}
-local colorSpecName = {1, 1, 1}
-local colorOtherAlly = {1, 0.7, 0.45}
-local colorGame = {0.4, 1, 1}
-local colorConsole = {0.85, 0.85, 0.85}
+local colorOther = { 1, 1, 1 }
+local colorAlly = { 0, 1, 0 }
+local colorSpec = { 1, 1, 0 }
+local colorSpecName = { 1, 1, 1 }
+local colorOtherAlly = { 1, 0.7, 0.45 }
+local colorGame = { 0.4, 1, 1 }
+local colorConsole = { 0.85, 0.85, 0.85 }
 local msgColor = '\255\180\180\180'
 local msgHighlightColor = '\255\215\215\215'
 local metalColor = '\255\233\233\233'
@@ -228,36 +233,55 @@ end
 
 local autocompleteCommands = {
 	'advmapshading', 'aicontrol', 'aikill', 'ailist', 'aireload', 'airmesh', 'allmapmarks', 'ally', 'atm', 'buffertext',
-	'chat', 'chatall', 'chatally', 'chatspec', 'cheat', 'clearmapmarks', 'cmdcolors', 'commandhelp', 'commandlist', 'console',
+	'chat', 'chatall', 'chatally', 'chatspec', 'cheat', 'clearmapmarks', 'cmdcolors', 'commandhelp', 'commandlist',
+	'console',
 	'controlunit', 'crash', 'createvideo', 'cross', 'ctrlpanel', 'debug', 'debugcolvol', 'debugdrawai', 'debuggl',
-	'debugglerrors', 'debuginfo', 'debugpath', 'debugtraceray', 'decguiopacity', 'decreaseviewradius', 'deselect', 'destroy',
-	'devlua', 'distdraw', 'disticon', 'divbyzero', 'drawinmap', 'drawlabel', 'drawtrees', 'dumpstate', 'dynamicsky', 'echo',
-	'editdefs', 'endgraph', 'exception', 'font', 'fps', 'fpshud', 'fullscreen', 'gameinfo', 'gathermode', 'give', 'globallos',
-	'godmode', 'grabinput', 'grounddecals', 'grounddetail', 'group', 'group0', 'group1', 'group2', 'group3', 'group4', 'group5',
-	'group6', 'group7', 'group8', 'group9', 'hardwarecursor', 'hideinterface', 'incguiopacity', 'increaseviewradius', 'info',
-	'inputtextgeo', 'keyreload', 'lastmsgpos', 'lessclouds', 'lesstrees', 'lodscale', 'luagaia', 'luarules', 'luasave', 'luaui',
-	'mapborder', 'mapmarks', 'mapmeshdrawer', 'mapshadowpolyoffset', 'maxnanoparticles', 'maxparticles', 'minimap', 'moreclouds',
-	'moretrees', 'mouse1', 'mouse2', 'mouse3', 'mouse4', 'mouse5', 'moveback', 'movedown', 'movefast', 'moveforward', 'moveleft',
-	'moveright', 'moveslow', 'moveup', 'mutesound', 'nocost', 'nohelp', 'noluadraw', 'nospecdraw', 'nospectatorchat', 'pastetext',
-	'pause', 'quitforce', 'quitmenu', 'quitmessage', 'reloadcegs', 'reloadcob', 'reloadforce', 'reloadgame', 'reloadshaders',
-	'reloadtextures', 'resbar', 'resync', 'safegl', 'save', 'say', 'screenshot', 'select', 'selectcycle', 'selectunits', 'send',
+	'debugglerrors', 'debuginfo', 'debugpath', 'debugtraceray', 'decguiopacity', 'decreaseviewradius', 'deselect',
+	'destroy',
+	'devlua', 'distdraw', 'disticon', 'divbyzero', 'drawinmap', 'drawlabel', 'drawtrees', 'dumpstate', 'dynamicsky',
+	'echo',
+	'editdefs', 'endgraph', 'exception', 'font', 'fps', 'fpshud', 'fullscreen', 'gameinfo', 'gathermode', 'give',
+	'globallos',
+	'godmode', 'grabinput', 'grounddecals', 'grounddetail', 'group', 'group0', 'group1', 'group2', 'group3', 'group4',
+	'group5',
+	'group6', 'group7', 'group8', 'group9', 'hardwarecursor', 'hideinterface', 'incguiopacity', 'increaseviewradius',
+	'info',
+	'inputtextgeo', 'keyreload', 'lastmsgpos', 'lessclouds', 'lesstrees', 'lodscale', 'luagaia', 'luarules', 'luasave',
+	'luaui',
+	'mapborder', 'mapmarks', 'mapmeshdrawer', 'mapshadowpolyoffset', 'maxnanoparticles', 'maxparticles', 'minimap',
+	'moreclouds',
+	'moretrees', 'mouse1', 'mouse2', 'mouse3', 'mouse4', 'mouse5', 'moveback', 'movedown', 'movefast', 'moveforward',
+	'moveleft',
+	'moveright', 'moveslow', 'moveup', 'mutesound', 'nocost', 'nohelp', 'noluadraw', 'nospecdraw', 'nospectatorchat',
+	'pastetext',
+	'pause', 'quitforce', 'quitmenu', 'quitmessage', 'reloadcegs', 'reloadcob', 'reloadforce', 'reloadgame',
+	'reloadshaders',
+	'reloadtextures', 'resbar', 'resync', 'safegl', 'save', 'say', 'screenshot', 'select', 'selectcycle', 'selectunits',
+	'send',
 	'set', 'shadows', 'sharedialog', 'showelevation', 'showmetalmap', 'showpathcost', 'showpathflow', 'showpathheat',
 	'showpathtraversability', 'showpathtype', 'showstandard', 'skip', 'slowdown', 'soundchannelenablec', 'sounddevice',
-	'specfullview', 'spectator', 'specteam', 'speedcontrol', 'speedup', 'take', 'team', 'teamhighlight', 'toggleinfo', 'togglelos',
-	'tooltip', 'track', 'trackmode', 'trackoff', 'tset', 'viewselection', 'vsync', 'water', 'wbynum', 'wiremap', 'wiremodel',
+	'specfullview', 'spectator', 'specteam', 'speedcontrol', 'speedup', 'take', 'team', 'teamhighlight', 'toggleinfo',
+	'togglelos',
+	'tooltip', 'track', 'trackmode', 'trackoff', 'tset', 'viewselection', 'vsync', 'water', 'wbynum', 'wiremap',
+	'wiremodel',
 	'wiresky', 'wiretree', 'wirewater', 'widgetselector',
 	'luarules battleroyaledebug', 'luarules buildicon', 'luarules cmd', 'luarules clearwrecks', 'luarules reducewrecks',
 	'luarules destroyunits', 'luarules disablecusgl4', 'luarules fightertest', 'luarules give', 'luarules givecat',
 	'luarules halfhealth', 'luarules kill_profiler', 'luarules loadmissiles', 'luarules profile', 'luarules reclaimunits',
-	'luarules reloadcus', 'luarules reloadcusgl4', 'luarules removeunits', 'luarules removeunitdef', 'luarules removenearbyunits',
-	'luarules spawnceg', 'luarules spawnunitexplosion', 'luarules undo', 'luarules unitcallinsgadget', 'luarules updatesun',
+	'luarules reloadcus', 'luarules reloadcusgl4', 'luarules removeunits', 'luarules removeunitdef',
+	'luarules removenearbyunits',
+	'luarules spawnceg', 'luarules spawnunitexplosion', 'luarules undo', 'luarules unitcallinsgadget',
+	'luarules updatesun',
 	'luarules waterlevel', 'luarules wreckunits', 'luarules xp', 'luarules transferunits', 'luarules playertoteam',
 	'luarules killteam', 'luarules globallos', 'luarules zombiesetallgaia', 'luarules zombiequeueallcorpses',
-	'luarules zombieautospawn 0', 'luarules zombieclearspawns', 'luarules zombiepacify 0', 'luarules zombiesuspendorders 0',
+	'luarules zombieautospawn 0', 'luarules zombieclearspawns', 'luarules zombiepacify 0',
+	'luarules zombiesuspendorders 0',
 	'luarules zombieaggroteam 0', 'luarules zombieaggroally 0', 'luarules zombiekillall', 'luarules zombieclearallorders',
 	'luarules zombiedebug 0', 'luarules zombiemode normal', 'luarules buildblock all default_reason',
-	'luarules buildunblock all default_reason', 'luaui reload', 'luaui disable', 'luaui enable', 'addmessage', 'radarpulse',
-	'ecostatstext', 'defrange ally air', 'defrange ally nuke', 'defrange ally ground', 'defrange enemy air', 'defrange enemy nuke',
+	'luarules buildunblock all default_reason', 'luaui reload', 'luaui disable', 'luaui enable', 'addmessage',
+	'radarpulse',
+	'ecostatstext', 'defrange ally air', 'defrange ally nuke', 'defrange ally ground', 'defrange enemy air',
+	'defrange enemy nuke',
 	'defrange enemy ground',
 }
 
@@ -294,45 +318,45 @@ local dataModel = {
 		end
 		needsUiRefresh = true
 	end,
-		setHistoryMode = function(mode)
-			if mode == 'chat' or mode == 'console' then
-				historyMode = mode
-				if mode == 'chat' then
-					maxLinesScroll = maxLinesScrollFull
-				end
-				needsUiRefresh = true
-			end
-		end,
-		clearHistoryMode = function()
-			historyMode = false
-			if currentChatLine > 0 then
-				local i = #chatLines
-				while i > 0 do
-					if not chatLines[i].ignore then
-						currentChatLine = i
-						break
-					end
-					i = i - 1
-				end
+	setHistoryMode = function(mode)
+		if mode == 'chat' or mode == 'console' then
+			historyMode = mode
+			if mode == 'chat' then
+				maxLinesScroll = maxLinesScrollFull
 			end
 			needsUiRefresh = true
-		end,
-		scrollHistory = function(delta)
-			delta = tonumber(delta) or 0
-			if delta == 0 then
-				return
+		end
+	end,
+	clearHistoryMode = function()
+		historyMode = false
+		if currentChatLine > 0 then
+			local i = #chatLines
+			while i > 0 do
+				if not chatLines[i].ignore then
+					currentChatLine = i
+					break
+				end
+				i = i - 1
 			end
-			widget:ScrollHistory(delta < 0, math.abs(delta))
-		end,
-		activateChatLine = function(index)
-			widget:ActivateChatLine(tonumber(index) or 0)
-		end,
-		acceptAutocomplete = function(index)
-			widget:AcceptAutocomplete(tonumber(index) or 1)
-		end,
-		beginInput = function()
-			widget:OpenInput(false, false, false)
-		end,
+		end
+		needsUiRefresh = true
+	end,
+	scrollHistory = function(delta)
+		delta = tonumber(delta) or 0
+		if delta == 0 then
+			return
+		end
+		widget:ScrollHistory(delta < 0, math.abs(delta))
+	end,
+	activateChatLine = function(index)
+		widget:ActivateChatLine(tonumber(index) or 0)
+	end,
+	acceptAutocomplete = function(index)
+		widget:AcceptAutocomplete(tonumber(index) or 1)
+	end,
+	beginInput = function()
+		widget:OpenInput(false, false, false)
+	end,
 }
 
 local function setCurrentChatLine(line)
@@ -409,6 +433,7 @@ function widget:LanguageChanged()
 	refreshUnitDefs()
 	needsUiRefresh = true
 end
+
 widget:LanguageChanged()
 
 local function findBadWords(str)
@@ -476,6 +501,18 @@ local function getColoredPlayerName(name, gameFrame, isSpectator)
 		return '(s) ' .. displayName
 	end
 	return displayName
+end
+
+local function getPlayerNameStyle(name)
+	local playerData = playernames[name]
+	local color = playerData and playerData[5]
+	if not color then
+		return ""
+	end
+	local r = mathFloor((color[1] or 1) * 255 + 0.5)
+	local g = mathFloor((color[2] or 1) * 255 + 0.5)
+	local b = mathFloor((color[3] or 1) * 255 + 0.5)
+	return string.format("rgb(%d, %d, %d);", r, g, b)
 end
 
 local function formatSystemMessage(i18nKey, playername, gameFrame, extraParams)
@@ -626,7 +663,8 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 			bypassThisMessage = true
 		end
 		local spectator = playernames[name] and playernames[name][2] or false
-		skipThisMessage = hideSpecChat and (not playernames[name] or spectator) and (not hideSpecChatPlayer or not mySpec)
+		skipThisMessage = hideSpecChat and (not playernames[name] or spectator) and
+		(not hideSpecChatPlayer or not mySpec)
 		text = cleanUserText(text)
 		nameText = '<' .. ((playernames[name] and playernames[name][7]) or name) .. '>'
 	elseif unitSharePos and playernames[string.sub(line, 1, unitSharePos - 1)] ~= nil then
@@ -958,6 +996,7 @@ local function chatRowToView(index, row, history)
 		timestamp = history and formatGameTime(row.gameFrame) or "",
 		showTimestamp = history and row.gameFrame ~= nil,
 		speaker = speaker,
+		speakerStyle = getPlayerNameStyle(row.playerName),
 		separator = separator,
 		text = row.text or '',
 		clickable = row.clickable and true or false,
@@ -1038,7 +1077,7 @@ local function refreshRootStyle()
 		return
 	end
 	root.style.left = tostring(activationArea[1]) .. "px"
-	root.style.top = tostring(activationArea[2]) .. "px"
+	root.style.top = tostring(vsy - activationArea[4]) .. "px"
 	root.style.width = tostring(activationArea[3] - activationArea[1]) .. "px"
 	root.style.height = tostring(activationArea[4] - activationArea[2]) .. "px"
 end
@@ -1122,7 +1161,8 @@ local function refreshDocumentModel()
 	if historyMode and chatLines[lastUnignoredChatLineID] and not chatLines[lastUnignoredChatLineID].ignore then
 		if currentChatLine < lastUnignoredChatLineID and (now - chatLines[lastUnignoredChatLineID].startTime < lineTTL) then
 			showNewChatNotice = true
-			newChatNotice = (chatLines[lastUnignoredChatLineID].playerNameText or '') .. ": " .. (chatLines[lastUnignoredChatLineID].text or '')
+			newChatNotice = (chatLines[lastUnignoredChatLineID].playerNameText or '') ..
+			": " .. (chatLines[lastUnignoredChatLineID].text or '')
 		end
 	end
 
@@ -1286,7 +1326,8 @@ function widget:Update(dt)
 				changeDetected = true
 				for _, playerID in ipairs(Spring.GetPlayerList(teamID)) do
 					local name = spGetPlayerInfo(playerID, false)
-					name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or name
+					name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
+					name
 					changedPlayers[name] = true
 				end
 			end
@@ -1294,7 +1335,8 @@ function widget:Update(dt)
 		if changeDetected then
 			for i = 1, #chatLines do
 				if changedPlayers[chatLines[i].playerName] then
-					chatLines[i].playerNameText = getColoredPlayerName(chatLines[i].playerName, chatLines[i].gameFrame, chatLines[i].lineType == LineTypes.Spectator)
+					chatLines[i].playerNameText = getColoredPlayerName(chatLines[i].playerName, chatLines[i].gameFrame,
+						chatLines[i].lineType == LineTypes.Spectator)
 				end
 			end
 			needsUiRefresh = true
@@ -1338,15 +1380,18 @@ function widget:Update(dt)
 					if shouldHideSpecMessage() then
 						chatLines[i].ignore = true
 					else
-						chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and true or nil
+						chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and true or
+						nil
 					end
 				elseif chatLines[i].lineType == LineTypes.Mapmark then
-					local spectator = playernames[chatLines[i].playerName] and playernames[chatLines[i].playerName][2] or false
+					local spectator = playernames[chatLines[i].playerName] and playernames[chatLines[i].playerName][2] or
+					false
 					if spectator then
 						if shouldHideSpecMessage() then
 							chatLines[i].ignore = true
 						else
-							chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and true or nil
+							chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and
+							true or nil
 						end
 					end
 				end
@@ -1471,7 +1516,9 @@ function widget:KeyPress(key)
 					else
 						local badWord = findBadWords(inputText)
 						if badWord ~= nil and inputText ~= lastMessage then
-							addChatLine(Spring.GetGameFrame(), LineTypes.System, "Moderation", Spring.I18N('ui.chat.moderation.prefix'), Spring.I18N('ui.chat.moderation.blocked', { badWord = badWord }), nil, false, true)
+							addChatLine(Spring.GetGameFrame(), LineTypes.System, "Moderation",
+								Spring.I18N('ui.chat.moderation.prefix'),
+								Spring.I18N('ui.chat.moderation.blocked', { badWord = badWord }), nil, false, true)
 						else
 							Spring.SendCommands("say " .. (inputMode or '') .. inputText)
 						end
@@ -1504,7 +1551,8 @@ function widget:KeyPress(key)
 			inputSelectionStart = nil
 		end
 		local clipboardText = spGetClipboard() or ''
-		inputText = utf8.sub(inputText, 1, inputTextPosition) .. clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
+		inputText = utf8.sub(inputText, 1, inputTextPosition) ..
+		clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
 		inputTextPosition = inputTextPosition + utf8.len(clipboardText)
 		if string.len(inputText) > maxTextInputChars then
 			inputText = string.sub(inputText, 1, maxTextInputChars)
@@ -1678,7 +1726,8 @@ function widget:KeyPress(key)
 		elseif key == KEYSYMS.TAB then
 			inputSelectionStart = nil
 			if autocompleteText then
-				inputText = utf8.sub(inputText, 1, inputTextPosition) .. autocompleteText .. utf8.sub(inputText, inputTextPosition + 1)
+				inputText = utf8.sub(inputText, 1, inputTextPosition) ..
+				autocompleteText .. utf8.sub(inputText, inputTextPosition + 1)
 				inputTextPosition = inputTextPosition + utf8.len(autocompleteText)
 				inputHistory[#inputHistory] = inputText
 				autocompleteText = nil
@@ -1738,10 +1787,12 @@ function widget:ViewResize()
 		topbarArea = WG['topbar'].GetPosition()
 		posY2 = mathFloor(topbarArea[2] - 4) / vsy
 		posX = topbarArea[1] / vsx
-		scrollingPosY = mathFloor(topbarArea[2] - 4 - backgroundPadding - backgroundPadding - (lineHeight * maxLinesScroll)) / vsy
+		scrollingPosY = mathFloor(topbarArea[2] - 4 - backgroundPadding - backgroundPadding -
+		(lineHeight * maxLinesScroll)) / vsy
 	end
 	consolePosY = mathFloor((vsy * posY2) - backgroundPadding - (maxConsoleLines * consoleLineHeight)) / vsy
 	posY = mathFloor((consolePosY * vsy) - (backgroundPadding * 1.5) - ((lineHeight * maxLines))) / vsy
+	posY = mathMax(0, posY2 - ((posY2 - posY) * 2))
 	activationArea = {
 		mathFloor(vsx * posX),
 		mathFloor(vsy * posY),
@@ -1781,8 +1832,10 @@ end
 
 function widget:PlayerAdded(playerID)
 	local name, _, isSpec, teamID, allyTeamID = spGetPlayerInfo(playerID, false)
-	local historyName = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or name
-	playernames[name] = { allyTeamID, isSpec, teamID, playerID, not isSpec and { spGetTeamColor(teamID) }, ColorIsDark and ColorIsDark(spGetTeamColor(teamID)) or false, historyName }
+	local historyName = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
+	name
+	playernames[name] = { allyTeamID, isSpec, teamID, playerID, not isSpec and { spGetTeamColor(teamID) }, ColorIsDark and
+	ColorIsDark(spGetTeamColor(teamID)) or false, historyName }
 	autocompletePlayernames[#autocompletePlayernames + 1] = name
 	if historyName ~= name then
 		autocompletePlayernames[#autocompletePlayernames + 1] = historyName
@@ -1808,7 +1861,8 @@ function widget:Initialize()
 		local aiName
 		if isAiTeam then
 			aiName = getAIName(teamID)
-			playernames[aiName] = { allyTeamID, false, teamID, playerID, { r, g, b }, ColorIsDark and ColorIsDark(r, g, b) or false, aiName }
+			playernames[aiName] = { allyTeamID, false, teamID, playerID, { r, g, b }, ColorIsDark and
+			ColorIsDark(r, g, b) or false, aiName }
 		end
 		if teamID == gaiaTeamID then
 			teamNames[teamID] = "Gaia"
@@ -1817,7 +1871,8 @@ function widget:Initialize()
 				teamNames[teamID] = aiName
 			else
 				local name, _, spec = spGetPlayerInfo(playerID, false)
-				name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or name
+				name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
+				name
 				if not spec then
 					teamNames[teamID] = name
 				end
@@ -1850,11 +1905,17 @@ function widget:Initialize()
 	WG['chat'] = {}
 	WG['chat'].isInputActive = function() return showTextInput end
 	WG['chat'].getInputButton = function() return inputButton end
-	WG['chat'].setHide = function(value) hide = value; needsUiRefresh = true end
+	WG['chat'].setHide = function(value)
+		hide = value; needsUiRefresh = true
+	end
 	WG['chat'].getHide = function() return hide end
-	WG['chat'].setChatInputHistory = function(value) showHistoryWhenChatInput = value; needsUiRefresh = true end
+	WG['chat'].setChatInputHistory = function(value)
+		showHistoryWhenChatInput = value; needsUiRefresh = true
+	end
 	WG['chat'].getChatInputHistory = function() return showHistoryWhenChatInput end
-	WG['chat'].setInputButton = function(value) inputButton = value; needsUiRefresh = true end
+	WG['chat'].setInputButton = function(value)
+		inputButton = value; needsUiRefresh = true
+	end
 	WG['chat'].getHandleInput = function() return handleTextInput end
 	WG['chat'].setHandleInput = function(value)
 		handleTextInput = value
@@ -1865,15 +1926,25 @@ function widget:Initialize()
 		needsUiRefresh = true
 	end
 	WG['chat'].getChatVolume = function() return sndChatFileVolume end
-	WG['chat'].setChatVolume = function(value) sndChatFileVolume = value; needsUiRefresh = true end
+	WG['chat'].setChatVolume = function(value)
+		sndChatFileVolume = value; needsUiRefresh = true
+	end
 	WG['chat'].getBackgroundOpacity = function() return backgroundOpacity end
-	WG['chat'].setBackgroundOpacity = function(value) backgroundOpacity = value; needsUiRefresh = true end
+	WG['chat'].setBackgroundOpacity = function(value)
+		backgroundOpacity = value; needsUiRefresh = true
+	end
 	WG['chat'].getMaxLines = function() return maxLines end
-	WG['chat'].setMaxLines = function(value) maxLines = value; widget:ViewResize() end
+	WG['chat'].setMaxLines = function(value)
+		maxLines = value; widget:ViewResize()
+	end
 	WG['chat'].getMaxConsoleLines = function() return maxConsoleLines end
-	WG['chat'].setMaxConsoleLines = function(value) maxConsoleLines = value; widget:ViewResize() end
+	WG['chat'].setMaxConsoleLines = function(value)
+		maxConsoleLines = value; widget:ViewResize()
+	end
 	WG['chat'].getFontsize = function() return fontsizeMult end
-	WG['chat'].setFontsize = function(value) fontsizeMult = value; widget:ViewResize() end
+	WG['chat'].setFontsize = function(value)
+		fontsizeMult = value; widget:ViewResize()
+	end
 	WG['chat'].addChatLine = function(gameFrame, lineType, name, nameText, text, orgLineID, ignore)
 		addChatLine(gameFrame, lineType, name, nameText, text, orgLineID, ignore, true)
 		needsUiRefresh = true

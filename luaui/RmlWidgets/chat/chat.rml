@@ -106,7 +106,6 @@
 			.text {
 				flex: 1;
 				white-space: normal;
-				word-wrap: break-word;
 			}
 
 			.history-panel {
@@ -189,7 +188,6 @@
 				padding: 8dp 10dp;
 				background-color: rgba(0, 0, 0, 120);
 				white-space: pre-wrap;
-				word-wrap: break-word;
 			}
 
 			.input-view.empty {
@@ -264,7 +262,7 @@
 						data-class-console-row="row.isConsole"
 						data-class-clickable="row.clickable"
 						data-event-click="activateChatLine(row.sourceIndex)">
-						<span class="speaker">{{row.speaker}}</span>
+						<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 						<span class="sep">{{row.separator}}</span>
 						<span class="text">{{row.text}}</span>
 					</div>
@@ -290,7 +288,7 @@
 							data-class-clickable="row.clickable"
 							data-event-click="activateChatLine(row.sourceIndex)">
 							<span class="timestamp">{{row.timestamp}}</span>
-							<span class="speaker">{{row.speaker}}</span>
+							<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 							<span class="sep">{{row.separator}}</span>
 							<span class="text">{{row.text}}</span>
 						</div>
