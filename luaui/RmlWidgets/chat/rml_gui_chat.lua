@@ -44,8 +44,8 @@ include("keysym.h.lua")
 
 local L_DEPRECATED = LOG and LOG.DEPRECATED
 local isDevSingle = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.Gametype and
-Spring.Utilities.Gametype.IsSinglePlayer and
-(Spring.Utilities.IsDevMode() and Spring.Utilities.Gametype.IsSinglePlayer())
+	Spring.Utilities.Gametype.IsSinglePlayer and
+	(Spring.Utilities.IsDevMode() and Spring.Utilities.Gametype.IsSinglePlayer())
 
 local LineTypes = {
 	Console = -1,
@@ -73,9 +73,9 @@ local config = {
 	lineHeightMult = 1.36,
 	lineTTL = 40,
 	consoleLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1200 or
-	400,
+		400,
 	orgLineCleanupTarget = Spring.Utilities and Spring.Utilities.IsDevMode and Spring.Utilities.IsDevMode() and 1400 or
-	600,
+		600,
 	backgroundOpacity = 0.25,
 	handleTextInput = true,
 	maxTextInputChars = 127,
@@ -664,7 +664,7 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 		end
 		local spectator = playernames[name] and playernames[name][2] or false
 		skipThisMessage = hideSpecChat and (not playernames[name] or spectator) and
-		(not hideSpecChatPlayer or not mySpec)
+			(not hideSpecChatPlayer or not mySpec)
 		text = cleanUserText(text)
 		nameText = '<' .. ((playernames[name] and playernames[name][7]) or name) .. '>'
 	elseif unitSharePos and playernames[string.sub(line, 1, unitSharePos - 1)] ~= nil then
@@ -1327,7 +1327,7 @@ function widget:Update(dt)
 				for _, playerID in ipairs(Spring.GetPlayerList(teamID)) do
 					local name = spGetPlayerInfo(playerID, false)
 					name = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
-					name
+						name
 					changedPlayers[name] = true
 				end
 			end
@@ -1381,17 +1381,17 @@ function widget:Update(dt)
 						chatLines[i].ignore = true
 					else
 						chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and true or
-						nil
+							nil
 					end
 				elseif chatLines[i].lineType == LineTypes.Mapmark then
 					local spectator = playernames[chatLines[i].playerName] and playernames[chatLines[i].playerName][2] or
-					false
+						false
 					if spectator then
 						if shouldHideSpecMessage() then
 							chatLines[i].ignore = true
 						else
 							chatLines[i].ignore = WG.ignoredAccounts and WG.ignoredAccounts[chatLines[i].playerName] and
-							true or nil
+								true or nil
 						end
 					end
 				end
@@ -1552,7 +1552,7 @@ function widget:KeyPress(key)
 		end
 		local clipboardText = spGetClipboard() or ''
 		inputText = utf8.sub(inputText, 1, inputTextPosition) ..
-		clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
+			clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
 		inputTextPosition = inputTextPosition + utf8.len(clipboardText)
 		if string.len(inputText) > maxTextInputChars then
 			inputText = string.sub(inputText, 1, maxTextInputChars)
@@ -1833,7 +1833,7 @@ end
 function widget:PlayerAdded(playerID)
 	local name, _, isSpec, teamID, allyTeamID = spGetPlayerInfo(playerID, false)
 	local historyName = ((WG.playernames and WG.playernames.getPlayername) and WG.playernames.getPlayername(playerID)) or
-	name
+		name
 	playernames[name] = { allyTeamID, isSpec, teamID, playerID, not isSpec and { spGetTeamColor(teamID) }, ColorIsDark and
 	ColorIsDark(spGetTeamColor(teamID)) or false, historyName }
 	autocompletePlayernames[#autocompletePlayernames + 1] = name
