@@ -118,7 +118,6 @@ local mySpec = spGetSpectatingState()
 local myTeamID = spGetMyTeamID()
 local myAllyTeamID = Spring.GetMyAllyTeamID()
 local chobbyInterface
-local showTextInput = false
 local inputTextPosition = 0
 local inputSelectionStart = nil
 local cursorBlinkTimer = 0
@@ -795,7 +794,11 @@ local function addLastUnitShareMessage()
 end
 
 local function cancelChatInput()
-	showTextInput = false
+	if dm_handle then
+		dm_handle.showTextInput = false
+	else
+		dataModel.showTextInput = false
+	end
 	if config.showHistoryWhenChatInput then
 		historyMode = false
 		setCurrentChatLine(#chatLines)
@@ -976,11 +979,15 @@ function widget:AcceptAutocomplete(index)
 end
 
 function widget:OpenInput(ctrl, alt, shift)
-	if showTextInput then
+	if dm_handle and dm_handle.showTextInput then
 		return
 	end
 	cancelChatInput()
-	showTextInput = true
+	if dm_handle then
+		dm_handle.showTextInput = true
+	else
+		dataModel.showTextInput = true
+	end
 	if config.showHistoryWhenChatInput then
 		historyMode = 'chat'
 		maxLinesScroll = config.maxLinesScrollChatInput
@@ -1220,16 +1227,15 @@ local function refreshDocumentModel()
 		end
 	end
 
-	dm_handle.rootVisible = (not config.hide and (#chatRows > 0 or #consoleRows > 0 or showTextInput)) or historyMode
+	dm_handle.rootVisible = (not config.hide and (#chatRows > 0 or #consoleRows > 0 or dm_handle.showTextInput)) or historyMode
 	dm_handle.showConsoleStack = (not historyMode and not config.hide and #consoleRows > 0)
-	dm_handle.showChatStack = (not config.hide and (#chatRows > 0 or showTextInput)) and not historyMode
+	dm_handle.showChatStack = (not config.hide and (#chatRows > 0 or dm_handle.showTextInput)) and not historyMode
 	dm_handle.showHistoryPanel = historyMode and true or false
 	dm_handle.isHistoryChat = historyMode == 'chat'
 	dm_handle.isHistoryConsole = historyMode == 'console'
-	dm_handle.showTextInput = showTextInput and config.handleTextInput
 	dm_handle.showInputButton = config.inputButton and config.handleTextInput
-	dm_handle.showAutocomplete = showTextInput and autocompleteText ~= nil
-	dm_handle.showAutocompleteList = showTextInput and autocompleteText ~= nil and autocompleteWords[2] ~= nil
+	dm_handle.showAutocomplete = dm_handle.showTextInput and autocompleteText ~= nil
+	dm_handle.showAutocompleteList = dm_handle.showTextInput and autocompleteText ~= nil and autocompleteWords[2] ~= nil
 	dm_handle.showNewChatNotice = showNewChatNotice
 	dm_handle.noHistory = (#historyRows == 0)
 	dm_handle.historyTitle = historyMode == 'console' and 'Console' or 'Chat'
@@ -1467,7 +1473,7 @@ function widget:Update(dt)
 		-- 		maxLinesScroll = maxLinesScrollFull
 		-- 	end
 	elseif historyMode then
-		if not config.showHistoryWhenChatInput or not showTextInput then
+		if not config.showHistoryWhenChatInput or not dm_handle.showTextInput then
 			historyMode = false
 			setCurrentChatLine(#chatLines)
 		end
@@ -1502,7 +1508,7 @@ function widget:RecvLuaMsg(msg)
 end
 
 function widget:TextInput(char)
-	if config.handleTextInput and not chobbyInterface and not Spring.IsGUIHidden() and showTextInput then
+	if config.handleTextInput and not chobbyInterface and not Spring.IsGUIHidden() and dm_handle.showTextInput then
 		local inputText = getInputText()
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
 			local selStart = mathMin(inputSelectionStart, inputTextPosition)
@@ -1556,7 +1562,7 @@ function widget:KeyPress(key)
 	dm_handle.ctrlShiftPressed = ctrl and shift
 	if ctrl and shift then dm_handle.notHoverable = false else dm_handle.notHoverable = true end
 	if key == KEYSYMS.RETURN then
-		if showTextInput then
+		if dm_handle.showTextInput then
 			if ctrl or alt or shift then
 				if ctrl then
 					inputMode = ''
@@ -1595,7 +1601,7 @@ function widget:KeyPress(key)
 		needsUiRefresh = true
 		return true
 	end
-	if not showTextInput then
+	if not dm_handle.showTextInput then
 		return false
 	end
 	if ctrl and key == KEYSYMS.V then
@@ -1802,7 +1808,7 @@ function widget:KeyPress(key)
 			end
 		end
 	end
-	if showTextInput then
+	if dm_handle.showTextInput then
 		setInputText(inputText)
 	end
 	needsUiRefresh = true
@@ -1966,7 +1972,7 @@ function widget:Initialize()
 	refreshRootStyle()
 
 	WG['chat'] = {}
-	WG['chat'].isInputActive = function() return showTextInput end
+	WG['chat'].isInputActive = function() return dm_handle and dm_handle.showTextInput end
 	WG['chat'].getInputButton = function() return config.inputButton end
 	WG['chat'].setHide = function(value)
 		config.hide = value; needsUiRefresh = true
