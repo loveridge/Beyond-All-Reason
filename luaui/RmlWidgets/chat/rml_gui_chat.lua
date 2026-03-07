@@ -120,8 +120,6 @@ local myAllyTeamID = Spring.GetMyAllyTeamID()
 local chobbyInterface
 local inputTextPosition = 0
 local inputSelectionStart = nil
-local cursorBlinkTimer = 0
-local cursorBlinkDuration = 1
 local inputMode = nil
 local inputTextInsertActive = false
 local inputHistory = {}
@@ -373,8 +371,8 @@ end
 
 local function setInputText(value)
 	value = stripColorCodes(value or "")
-	if string.len(value) > config.maxTextInputChars then
-		value = string.sub(value, 1, config.maxTextInputChars)
+	if utf8.len(value) > config.maxTextInputChars then
+		value = utf8.sub(value, 1, config.maxTextInputChars)
 	end
 	if dm_handle then
 		dm_handle.inputText = value
@@ -451,8 +449,8 @@ local function findBadWords(str)
 end
 
 local function cleanUserText(text)
-	if string.sub(text, 1, 1) == ' ' then
-		text = string.sub(text, 2)
+	if utf8.sub(text, 1, 1) == ' ' then
+		text = utf8.sub(text, 2)
 	end
 	return stripColorCodes(text)
 end
@@ -465,9 +463,9 @@ end
 
 local function extractChannelPrefix(text)
 	if string.find(text, 'Allies: ', 1, true) == 1 then
-		return string.sub(text, 9), 'allies'
+		return utf8.sub(text, 9), 'allies'
 	elseif string.find(text, 'Spectators: ', 1, true) == 1 then
-		return string.sub(text, 13), 'spectators'
+		return utf8.sub(text, 13), 'spectators'
 	end
 	return text, 'all'
 end
@@ -624,15 +622,15 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 	local replaySpecEnd = string.find(line, " (replay)] ", 1, true)
 	local mapPointPos = string.find(line, " added point: ", 1, true)
 	local unitSharePos = string.find(line, " shared units to ", 1, true)
-	if string.sub(line, 1, 4) == '!NL=' then return end
+	if utf8.sub(line, 1, 4) == '!NL=' then return end
 	Spring.Echo('!NL=' .. line)
 
-	local firstChar = string.sub(line, 1, 1)
+	local firstChar = utf8.sub(line, 1, 1)
 
-	if firstChar == '<' and playerChatEnd and playernames[string.sub(line, 2, playerChatEnd - 1)] ~= nil then
+	if firstChar == '<' and playerChatEnd and playernames[utf8.sub(line, 2, playerChatEnd - 1)] ~= nil then
 		lineType = LineTypes.Player
-		name = string.sub(line, 2, playerChatEnd - 1)
-		text = string.sub(line, #name + 4)
+		name = utf8.sub(line, 2, playerChatEnd - 1)
+		text = utf8.sub(line, #name + 4)
 		local channel
 		text, channel = extractChannelPrefix(text)
 		text = cleanUserText(text)
@@ -642,24 +640,24 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 		elseif channel == 'allies' then
 			lineType = LineTypes.Player
 		end
-	elseif firstChar == '[' and ((specChatEnd and playernames[string.sub(line, 2, specChatEnd - 1)] ~= nil) or (replaySpecEnd and playernames[string.sub(line, 2, replaySpecEnd - 1)] ~= nil)) then
+	elseif firstChar == '[' and ((specChatEnd and playernames[utf8.sub(line, 2, specChatEnd - 1)] ~= nil) or (replaySpecEnd and playernames[utf8.sub(line, 2, replaySpecEnd - 1)] ~= nil)) then
 		lineType = LineTypes.Spectator
-		if specChatEnd and playernames[string.sub(line, 2, specChatEnd - 1)] ~= nil then
-			name = string.sub(line, 2, specChatEnd - 1)
-			text = string.sub(line, #name + 4)
+		if specChatEnd and playernames[utf8.sub(line, 2, specChatEnd - 1)] ~= nil then
+			name = utf8.sub(line, 2, specChatEnd - 1)
+			text = utf8.sub(line, #name + 4)
 		else
-			name = string.sub(line, 2, replaySpecEnd - 1)
-			text = string.sub(line, #name + 13)
+			name = utf8.sub(line, 2, replaySpecEnd - 1)
+			text = utf8.sub(line, #name + 13)
 		end
 		skipThisMessage = shouldHideSpecMessage()
 		local channel
 		text, channel = extractChannelPrefix(text)
 		text = cleanUserText(text)
 		nameText = getColoredPlayerName(name, gameFrame, true)
-	elseif mapPointPos and playernames[string.sub(line, 1, mapPointPos - 1)] ~= nil then
+	elseif mapPointPos and playernames[utf8.sub(line, 1, mapPointPos - 1)] ~= nil then
 		lineType = LineTypes.Mapmark
-		name = string.sub(line, 1, mapPointPos - 1)
-		text = cleanUserText(string.sub(line, #(name .. " added point: ") + 1))
+		name = utf8.sub(line, 1, mapPointPos - 1)
+		text = cleanUserText(utf8.sub(line, #(name .. " added point: ") + 1))
 		if text == '' then
 			text = 'Look here!'
 		end
@@ -670,12 +668,12 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 		nameText = getColoredPlayerName(name, gameFrame, spectator)
 	elseif firstChar == '>' then
 		lineType = LineTypes.Spectator
-		text = string.sub(line, 3)
-		if string.sub(line, 1, 3) == "> <" then
-			local idx = string.find(string.sub(line, 4), ">", 1, true)
+		text = utf8.sub(line, 3)
+		if utf8.sub(line, 1, 3) == "> <" then
+			local idx = string.find(utf8.sub(line, 4), ">", 1, true)
 			if idx then
-				name = string.sub(line, 4, idx + 2)
-				text = string.sub(line, idx + 5)
+				name = utf8.sub(line, 4, idx + 2)
+				text = utf8.sub(line, idx + 5)
 			else
 				name = "unknown"
 			end
@@ -687,9 +685,9 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 			(not config.hideSpecChatPlayer or not mySpec)
 		text = cleanUserText(text)
 		nameText = '<' .. ((playernames[name] and playernames[name][7]) or name) .. '>'
-	elseif unitSharePos and playernames[string.sub(line, 1, unitSharePos - 1)] ~= nil then
+	elseif unitSharePos and playernames[utf8.sub(line, 1, unitSharePos - 1)] ~= nil then
 		lineType = LineTypes.System
-		local oldTeamName, newTeamName, shareDesc = string.match(line, "(.+) shared units to (.+): (.+)")
+		local oldTeamName, newTeamName, shareDesc = utf8.match(line, "(.+) shared units to (.+): (.+)")
 		if newTeamName and newTeamName ~= '' and shareDesc and shareDesc ~= '' then
 			text = Spring.I18N('ui.unitShare.shared', {
 				units = shareDesc,
@@ -725,26 +723,26 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 					soundErrors[text] = true
 				end
 			elseif string.find(text, ' paused the game', 1, true) then
-				local playername = string.sub(text, 1, string.find(text, ' paused the game', 1, true) - 1)
+				local playername = utf8.sub(text, 1, string.find(text, ' paused the game', 1, true) - 1)
 				text = formatSystemMessage('ui.chat.pausedthegame', playername, gameFrame, {})
 			elseif string.find(text, ' unpaused the game', 1, true) then
-				local playername = string.sub(text, 1, string.find(text, ' unpaused the game', 1, true) - 1)
+				local playername = utf8.sub(text, 1, string.find(text, ' unpaused the game', 1, true) - 1)
 				text = formatSystemMessage('ui.chat.unpausedthegame', playername, gameFrame, {})
 			elseif string.find(text, 'Sync error for', 1, true) then
 				local framePos = string.find(text, ' in frame', 1, true)
 				if framePos then
-					local playername = string.sub(text, 16, framePos - 1)
+					local playername = utf8.sub(text, 16, framePos - 1)
 					text = formatSystemMessage('ui.chat.syncerrorfor', playername, gameFrame, {})
 				end
 			elseif string.find(text, ' is lagging behind', 1, true) then
-				local playername = string.sub(text, 1, string.find(text, ' is lagging behind', 1, true) - 1)
+				local playername = utf8.sub(text, 1, string.find(text, ' is lagging behind', 1, true) - 1)
 				text = formatSystemMessage('ui.chat.laggingbehind', playername, gameFrame, {})
 			end
 		end
 	end
 
 	if not bypassThisMessage then
-		if ((string.sub(text, 1, 1) == '!' and string.sub(text, 1, 2) ~= '!!') or string.find(text, 'My player ID is', 1, true)) then
+		if ((utf8.sub(text, 1, 1) == '!' and utf8.sub(text, 1, 2) ~= '!!') or string.find(text, 'My player ID is', 1, true)) then
 			bypassThisMessage = true
 		end
 		if not bypassThisMessage and text ~= '' then
@@ -854,10 +852,10 @@ local function runAutocompleteSet(wordsSet, searchStr, multi, lower)
 	for _, word in ipairs(wordsSet) do
 		local compareWord = lower and word:lower() or word
 		local compareStr = lower and searchStr:lower() or searchStr
-		if #word > charCount and compareStr == string.sub(compareWord, 1, charCount) then
+		if #word > charCount and compareStr == utf8.sub(compareWord, 1, charCount) then
 			autocompleteWords[#autocompleteWords + 1] = word
 			if not autocompleteText then
-				autocompleteText = string.sub(word, charCount + 1)
+				autocompleteText = utf8.sub(word, charCount + 1)
 				if not multi then
 					return true
 				end
@@ -895,14 +893,14 @@ local function autocomplete(text, fresh)
 		return
 	end
 	local letters = ''
-	local isCmd = string.sub(text, 1, 1) == '/'
+	local isCmd = utf8.sub(text, 1, 1) == '/'
 	local words = {}
-	for word in (string.sub(text, isCmd and 2 or 1)):gmatch("%S+") do
+	for word in (utf8.sub(text, isCmd and 2 or 1)):gmatch("%S+") do
 		words[#words + 1] = word
 		letters = word
 	end
 	local t = getInputText()
-	if string.sub(t, #text) == ' ' then
+	if utf8.sub(t, #text) == ' ' then
 		letters = letters .. ' '
 		if autocompleteWords[1] then
 			prevAutocompleteLetters = letters
@@ -951,18 +949,18 @@ function widget:AcceptAutocomplete(index)
 	local word = autocompleteWords[index]
 	local inputText = getInputText()
 	local letters = ''
-	local isCmd = string.sub(inputText, 1, 1) == '/'
-	for piece in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
+	local isCmd = utf8.sub(inputText, 1, 1) == '/'
+	for piece in (isCmd and utf8.sub(inputText, 2) or inputText):gmatch("%S+") do
 		letters = piece
 	end
-	if string.sub(inputText, #inputText) == ' ' then
+	if utf8.sub(inputText, #inputText) == ' ' then
 		letters = letters .. ' '
 	elseif prevAutocompleteLetters then
 		letters = prevAutocompleteLetters .. letters
 	end
 	local replaceLen = #letters
 	if replaceLen > 0 then
-		inputText = string.sub(inputText, 1, #inputText - replaceLen) .. word
+		inputText = utf8.sub(inputText, 1, #inputText - replaceLen) .. word
 	else
 		inputText = inputText .. word
 	end
@@ -982,11 +980,11 @@ local function buildAutocompleteRows()
 	end
 	local inputText = getInputText()
 	local letters = ''
-	local isCmd = string.sub(inputText, 1, 1) == '/'
-	for word in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
+	local isCmd = utf8.sub(inputText, 1, 1) == '/'
+	for word in (isCmd and utf8.sub(inputText, 2) or inputText):gmatch("%S+") do
 		letters = word
 	end
-	if string.sub(inputText, #inputText) == ' ' then
+	if utf8.sub(inputText, #inputText) == ' ' then
 		letters = letters .. ' '
 	elseif prevAutocompleteLetters then
 		letters = prevAutocompleteLetters .. letters
@@ -997,7 +995,7 @@ local function buildAutocompleteRows()
 			rows[#rows + 1] = {
 				index = i,
 				prefix = letters,
-				suffix = string.sub(word, letterCount + 1),
+				suffix = utf8.sub(word, letterCount + 1),
 			}
 			if #rows >= config.allowMultiAutocompleteMax then
 				break
@@ -1084,7 +1082,7 @@ end
 
 local function currentModeLabel()
 	local inputText = getInputText()
-	local isCmd = string.sub(inputText, 1, 1) == '/'
+	local isCmd = utf8.sub(inputText, 1, 1) == '/'
 	if isCmd then
 		return I18N.cmd
 	elseif inputMode == 'a:' then
@@ -1283,10 +1281,6 @@ end
 
 function widget:Update(dt)
 	addLastUnitShareMessage()
-	cursorBlinkTimer = cursorBlinkTimer + dt
-	if cursorBlinkTimer > cursorBlinkDuration then
-		cursorBlinkTimer = 0
-	end
 
 	uiSec = uiSec + dt
 	if uiSec > 1 then
@@ -1495,15 +1489,14 @@ function widget:TextInput(char)
 			inputText = utf8.sub(inputText, 1, inputTextPosition) .. char .. utf8.sub(inputText, inputTextPosition + 1)
 			inputTextPosition = inputTextPosition + 1
 		end
-		if string.len(inputText) > config.maxTextInputChars then
-			inputText = string.sub(inputText, 1, config.maxTextInputChars)
+		if utf8.len(inputText) > config.maxTextInputChars then
+			inputText = utf8.sub(inputText, 1, config.maxTextInputChars)
 			if inputTextPosition > config.maxTextInputChars then
 				inputTextPosition = config.maxTextInputChars
 			end
 		end
 		inputText = setInputText(inputText)
 		inputHistory[#inputHistory] = inputText
-		cursorBlinkTimer = 0
 		autocomplete(inputText)
 		needsUiRefresh = true
 		if WG['limitidlefps'] and WG['limitidlefps'].update then
@@ -1542,8 +1535,8 @@ function widget:KeyPress(key)
 				end
 			else
 				if inputText ~= '' then
-					if string.sub(inputText, 1, 1) == '/' then
-						Spring.SendCommands(string.sub(inputText, 2))
+					if utf8.sub(inputText, 1, 1) == '/' then
+						Spring.SendCommands(utf8.sub(inputText, 2))
 					else
 						local badWord = findBadWords(inputText)
 						if badWord ~= nil and inputText ~= lastMessage then
@@ -1586,15 +1579,14 @@ function widget:KeyPress(key)
 		inputText = utf8.sub(inputText, 1, inputTextPosition) ..
 			clipboardText .. utf8.sub(inputText, inputTextPosition + 1)
 		inputTextPosition = inputTextPosition + utf8.len(clipboardText)
-		if string.len(inputText) > config.maxTextInputChars then
-			inputText = string.sub(inputText, 1, config.maxTextInputChars)
+		if utf8.len(inputText) > config.maxTextInputChars then
+			inputText = utf8.sub(inputText, 1, config.maxTextInputChars)
 			if inputTextPosition > config.maxTextInputChars then
 				inputTextPosition = config.maxTextInputChars
 			end
 		end
 		inputText = setInputText(inputText)
 		inputHistory[#inputHistory] = inputText
-		cursorBlinkTimer = 0
 		autocomplete(inputText, true)
 	elseif ctrl and key == KEYSYMS.C then
 		if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
@@ -1614,14 +1606,12 @@ function widget:KeyPress(key)
 			inputTextPosition = selStart
 			inputSelectionStart = nil
 			inputHistory[#inputHistory] = inputText
-			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
 		end
 	elseif ctrl and key == KEYSYMS.A then
 		Spring.Echo("ALL")
 		inputSelectionStart = 0
 		inputTextPosition = utf8.len(inputText)
-		cursorBlinkTimer = 0
 	elseif ctrl and key == KEYSYMS.LEFT then
 		if shift then
 			if not inputSelectionStart then
@@ -1638,7 +1628,6 @@ function widget:KeyPress(key)
 			pos = pos - 1
 		end
 		inputTextPosition = pos
-		cursorBlinkTimer = 0
 	elseif ctrl and key == KEYSYMS.RIGHT then
 		if shift then
 			if not inputSelectionStart then
@@ -1656,7 +1645,6 @@ function widget:KeyPress(key)
 			pos = pos + 1
 		end
 		inputTextPosition = pos
-		cursorBlinkTimer = 0
 	elseif not alt and not ctrl then
 		if key == KEYSYMS.ESCAPE then
 			cancelChatInput()
@@ -1675,11 +1663,10 @@ function widget:KeyPress(key)
 				inputText = setInputText(inputText)
 				inputTextPosition = inputTextPosition - 1
 				inputHistory[#inputHistory] = inputText
-				if not (prevAutocompleteLetters and inputTextPosition == #inputText and string.sub(inputText, #inputText) ~= ' ') then
+				if not (prevAutocompleteLetters and inputTextPosition == #inputText and utf8.sub(inputText, #inputText) ~= ' ') then
 					prevAutocompleteLetters = nil
 				end
 			end
-			cursorBlinkTimer = 0
 			autocomplete(inputText, not prevAutocompleteLetters)
 		elseif key == KEYSYMS.DELETE then
 			if inputSelectionStart and inputSelectionStart ~= inputTextPosition then
@@ -1695,7 +1682,6 @@ function widget:KeyPress(key)
 				inputText = setInputText(inputText)
 				inputHistory[#inputHistory] = inputText
 			end
-			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
 		elseif key == KEYSYMS.INSERT then
 			inputTextInsertActive = not inputTextInsertActive
@@ -1708,7 +1694,6 @@ function widget:KeyPress(key)
 				inputSelectionStart = nil
 			end
 			inputTextPosition = mathMax(0, inputTextPosition - 1)
-			cursorBlinkTimer = 0
 		elseif key == KEYSYMS.RIGHT then
 			if shift then
 				if not inputSelectionStart then
@@ -1718,7 +1703,6 @@ function widget:KeyPress(key)
 				inputSelectionStart = nil
 			end
 			inputTextPosition = mathMin(utf8.len(inputText), inputTextPosition + 1)
-			cursorBlinkTimer = 0
 		elseif key == KEYSYMS.HOME or key == KEYSYMS.PAGEUP then
 			if shift then
 				if not inputSelectionStart then
@@ -1728,7 +1712,6 @@ function widget:KeyPress(key)
 				inputSelectionStart = nil
 			end
 			inputTextPosition = 0
-			cursorBlinkTimer = 0
 		elseif key == KEYSYMS.END or key == KEYSYMS.PAGEDOWN then
 			if shift then
 				if not inputSelectionStart then
@@ -1738,7 +1721,6 @@ function widget:KeyPress(key)
 				inputSelectionStart = nil
 			end
 			inputTextPosition = utf8.len(inputText)
-			cursorBlinkTimer = 0
 		elseif key == KEYSYMS.UP then
 			inputSelectionStart = nil
 			inputHistoryCurrent = inputHistoryCurrent - 1
@@ -1751,7 +1733,6 @@ function widget:KeyPress(key)
 				inputHistory[#inputHistory] = inputText
 			end
 			inputTextPosition = utf8.len(inputText)
-			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
 		elseif key == KEYSYMS.DOWN then
 			inputSelectionStart = nil
@@ -1762,7 +1743,6 @@ function widget:KeyPress(key)
 			inputText = inputHistory[inputHistoryCurrent] or ''
 			inputText = setInputText(inputText)
 			inputTextPosition = utf8.len(inputText)
-			cursorBlinkTimer = 0
 			autocomplete(inputText, true)
 		elseif key == KEYSYMS.TAB then
 			inputSelectionStart = nil
