@@ -439,26 +439,6 @@ local function refreshUnitDefs()
 	end
 end
 
-function widget:LanguageChanged()
-	I18N = {
-		energy = Spring.I18N('ui.topbar.resources.energy'):lower(),
-		metal = Spring.I18N('ui.topbar.resources.metal'):lower(),
-		everyone = Spring.I18N('ui.chat.everyone'),
-		allies = Spring.I18N('ui.chat.allies'),
-		spectators = Spring.I18N('ui.chat.spectators'),
-		cmd = Spring.I18N('ui.chat.cmd'),
-		shortcut = Spring.I18N('ui.chat.shortcut'),
-		nohistory = Spring.I18N('ui.chat.nohistory'),
-		scroll = Spring.I18N('ui.chat.scroll', { textColor = "\255\255\255\255", highlightColor = "\255\255\255\001" }),
-		historyChat = Spring.I18N('ui.chat.allies'),
-		historyConsole = "Console",
-	}
-	refreshUnitDefs()
-	needsUiRefresh = true
-end
-
-widget:LanguageChanged()
-
 local function findBadWords(str)
 	str = string.lower(str)
 	for w in str:gmatch("%w+") do
@@ -560,6 +540,16 @@ local function commonUnitName(unitIDs)
 	return unitTranslatedHumanName[commonUnitDefID] or (#unitIDs > 1 and "units" or "unit")
 end
 
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- ADD LINES --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
 local function addConsoleLine(gameFrame, lineType, text, orgLineID)
 	if not text or text == '' then
 		return
@@ -575,6 +565,7 @@ local function addConsoleLine(gameFrame, lineType, text, orgLineID)
 		currentConsoleLine = #consoleLines
 	end
 end
+
 
 local function addChatLine(gameFrame, lineType, name, nameText, text, orgLineID, ignore, noProcessors)
 	if not noProcessors then
@@ -636,7 +627,9 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 	if string.sub(line, 1, 4) == '!NL=' then return end
 	Spring.Echo('!NL=' .. line)
 
-	if string.sub(line, 1, 1) == '<' and playerChatEnd and playernames[string.sub(line, 2, playerChatEnd - 1)] ~= nil then
+	local firstChar = string.sub(line, 1, 1)
+
+	if firstChar == '<' and playerChatEnd and playernames[string.sub(line, 2, playerChatEnd - 1)] ~= nil then
 		lineType = LineTypes.Player
 		name = string.sub(line, 2, playerChatEnd - 1)
 		text = string.sub(line, #name + 4)
@@ -649,7 +642,7 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 		elseif channel == 'allies' then
 			lineType = LineTypes.Player
 		end
-	elseif string.sub(line, 1, 1) == '[' and ((specChatEnd and playernames[string.sub(line, 2, specChatEnd - 1)] ~= nil) or (replaySpecEnd and playernames[string.sub(line, 2, replaySpecEnd - 1)] ~= nil)) then
+	elseif firstChar == '[' and ((specChatEnd and playernames[string.sub(line, 2, specChatEnd - 1)] ~= nil) or (replaySpecEnd and playernames[string.sub(line, 2, replaySpecEnd - 1)] ~= nil)) then
 		lineType = LineTypes.Spectator
 		if specChatEnd and playernames[string.sub(line, 2, specChatEnd - 1)] ~= nil then
 			name = string.sub(line, 2, specChatEnd - 1)
@@ -675,7 +668,7 @@ local function processAddConsoleLine(gameFrame, line, orgLineID)
 			skipThisMessage = shouldHideSpecMessage()
 		end
 		nameText = getColoredPlayerName(name, gameFrame, spectator)
-	elseif string.sub(line, 1, 1) == '>' then
+	elseif firstChar == '>' then
 		lineType = LineTypes.Spectator
 		text = string.sub(line, 3)
 		if string.sub(line, 1, 3) == "> <" then
@@ -823,6 +816,17 @@ local function cancelChatInput()
 	needsUiRefresh = true
 end
 
+function widget:AddConsoleLine(lines, priority)
+	if priority and priority == L_DEPRECATED and not isDevSingle then
+		return
+	end
+	lines = lines:match('^%[f=[0-9]+%] (.*)$') or lines
+	for line in lines:gmatch("[^\n]+") do
+		processAddConsoleLine(spGetGameFrame(), line)
+	end
+	needsUiRefresh = true
+end
+
 local function clearChatInput()
 	setInputText('')
 	inputTextPosition = 0
@@ -833,6 +837,16 @@ local function clearChatInput()
 	prevAutocompleteLetters = nil
 	needsUiRefresh = true
 end
+
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- AUTOCOMPLETE --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
 
 local function runAutocompleteSet(wordsSet, searchStr, multi, lower)
 	autocompleteWords = {}
@@ -929,23 +943,6 @@ local function autocomplete(text, fresh)
 	end
 end
 
-function widget:ActivateChatLine(index)
-	local shownCount = #(dm_handle.chatRows.__raw())
-	local line = chatLines[currentChatLine - (shownCount - index - 1)]
-	Spring.Echo(chatLines)
-	Spring.Echo(index + 1, currentChatLine, #chatLines, config.maxLines, shownCount)
-	Spring.Echo(line)
-	if not line then
-		return
-	end
-	if line.coords then
-		Spring.SetCameraTarget(line.coords[1], line.coords[2], line.coords[3])
-	elseif line.selectUnits then
-		Spring.SelectUnitArray(line.selectUnits)
-		Spring.SendCommands("viewselection")
-	end
-end
-
 function widget:AcceptAutocomplete(index)
 	index = tonumber(index) or 1
 	if not autocompleteWords[index] then
@@ -978,47 +975,48 @@ function widget:AcceptAutocomplete(index)
 	needsUiRefresh = true
 end
 
-function widget:OpenInput(ctrl, alt, shift)
-	if dm_handle and dm_handle.showTextInput then
-		return
+local function buildAutocompleteRows()
+	local rows = {}
+	if not autocompleteText or not autocompleteWords[2] then
+		return rows
 	end
-	cancelChatInput()
-	if dm_handle then
-		dm_handle.showTextInput = true
-	else
-		dataModel.showTextInput = true
+	local inputText = getInputText()
+	local letters = ''
+	local isCmd = string.sub(inputText, 1, 1) == '/'
+	for word in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
+		letters = word
 	end
-	if config.showHistoryWhenChatInput then
-		historyMode = 'chat'
-		maxLinesScroll = config.maxLinesScrollChatInput
+	if string.sub(inputText, #inputText) == ' ' then
+		letters = letters .. ' '
+	elseif prevAutocompleteLetters then
+		letters = prevAutocompleteLetters .. letters
 	end
-	widgetHandler.textOwner = self
-	if not inputHistory[inputHistoryCurrent] or inputHistory[inputHistoryCurrent] ~= '' then
-		if inputHistoryCurrent == 1 or inputHistory[inputHistoryCurrent] ~= inputHistory[inputHistoryCurrent - 1] then
-			inputHistoryCurrent = inputHistoryCurrent + 1
+	local letterCount = #letters
+	for i, word in ipairs(autocompleteWords) do
+		if i > 1 then
+			rows[#rows + 1] = {
+				index = i,
+				prefix = letters,
+				suffix = string.sub(word, letterCount + 1),
+			}
+			if #rows >= config.allowMultiAutocompleteMax then
+				break
+			end
 		end
-		inputHistory[inputHistoryCurrent] = ''
 	end
-	if ctrl then
-		inputMode = ''
-	elseif alt then
-		inputMode = mySpec and 's:' or 'a:'
-	elseif shift then
-		inputMode = 's:'
-	elseif inputMode == nil then
-		inputMode = mySpec and 's:' or 'a:'
-	end
-	Spring.SDLStartTextInput()
-	needsUiRefresh = true
+	return rows
 end
 
-function widget:HandleChatInputFocus()
-	chatInputFocused = true
-end
 
-function widget:HandleChatInputBlur()
-	chatInputFocused = false
-end
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- MODEL UPDATES? --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
 
 local function sliceRows(source, startIndex, count, predicate)
 	local rows = {}
@@ -1095,38 +1093,6 @@ local function currentModeLabel()
 		return I18N.spectators
 	end
 	return I18N.everyone
-end
-
-local function buildAutocompleteRows()
-	local rows = {}
-	if not autocompleteText or not autocompleteWords[2] then
-		return rows
-	end
-	local inputText = getInputText()
-	local letters = ''
-	local isCmd = string.sub(inputText, 1, 1) == '/'
-	for word in (isCmd and string.sub(inputText, 2) or inputText):gmatch("%S+") do
-		letters = word
-	end
-	if string.sub(inputText, #inputText) == ' ' then
-		letters = letters .. ' '
-	elseif prevAutocompleteLetters then
-		letters = prevAutocompleteLetters .. letters
-	end
-	local letterCount = #letters
-	for i, word in ipairs(autocompleteWords) do
-		if i > 1 then
-			rows[#rows + 1] = {
-				index = i,
-				prefix = letters,
-				suffix = string.sub(word, letterCount + 1),
-			}
-			if #rows >= config.allowMultiAutocompleteMax then
-				break
-			end
-		end
-	end
-	return rows
 end
 
 local function refreshRootStyle()
@@ -1227,7 +1193,8 @@ local function refreshDocumentModel()
 		end
 	end
 
-	dm_handle.rootVisible = (not config.hide and (#chatRows > 0 or #consoleRows > 0 or dm_handle.showTextInput)) or historyMode
+	dm_handle.rootVisible = (not config.hide and (#chatRows > 0 or #consoleRows > 0 or dm_handle.showTextInput)) or
+		historyMode
 	dm_handle.showConsoleStack = (not historyMode and not config.hide and #consoleRows > 0)
 	dm_handle.showChatStack = (not config.hide and (#chatRows > 0 or dm_handle.showTextInput)) and not historyMode
 	dm_handle.showHistoryPanel = historyMode and true or false
@@ -1249,56 +1216,6 @@ local function refreshDocumentModel()
 	dm_handle.autocompleteRows = buildAutocompleteRows()
 	refreshRootStyle()
 	needsUiRefresh = false
-end
-
-local function clearconsoleCmd()
-	orgLines = {}
-	chatLines = {}
-	consoleLines = {}
-	currentChatLine = 0
-	currentConsoleLine = 0
-	needsUiRefresh = true
-end
-
-local function hidespecchatCmd(_, _, params)
-	if params[1] then
-		config.hideSpecChat = (params[1] == '1')
-	else
-		config.hideSpecChat = not config.hideSpecChat
-	end
-	Spring.SetConfigInt('HideSpecChat', config.hideSpecChat and 1 or 0)
-	if config.hideSpecChat then
-		spEcho("Hiding all spectator chat")
-	else
-		spEcho("Showing all spectator chat again")
-	end
-	needsUiRefresh = true
-end
-
-local function hidespecchatplayerCmd(_, _, params)
-	if params[1] then
-		config.hideSpecChatPlayer = (params[1] == '1')
-	else
-		config.hideSpecChatPlayer = not config.hideSpecChatPlayer
-	end
-	Spring.SetConfigInt('HideSpecChatPlayer', config.hideSpecChatPlayer and 1 or 0)
-	if config.hideSpecChat then
-		spEcho("Hiding all spectator chat when player")
-	else
-		spEcho("Showing all spectator chat when player again")
-	end
-	needsUiRefresh = true
-end
-
-local function preventhistorymodeCmd()
-	config.showHistoryWhenCtrlShift = not config.showHistoryWhenCtrlShift
-	config.enableShortcutClick = not config.enableShortcutClick
-	if not config.showHistoryWhenCtrlShift then
-		spEcho("Preventing toggling historymode via CTRL+SHIFT")
-	else
-		spEcho("Enabled toggling historymode via CTRL+SHIFT")
-	end
-	needsUiRefresh = true
 end
 
 function widget:ScrollHistory(up, amount)
@@ -1505,6 +1422,58 @@ function widget:RecvLuaMsg(msg)
 			end
 		end
 	end
+end
+
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- TEXT INPUT --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+function widget:OpenInput(ctrl, alt, shift)
+	if dm_handle and dm_handle.showTextInput then
+		return
+	end
+	cancelChatInput()
+	if dm_handle then
+		dm_handle.showTextInput = true
+	else
+		dataModel.showTextInput = true
+	end
+	if config.showHistoryWhenChatInput then
+		historyMode = 'chat'
+		maxLinesScroll = config.maxLinesScrollChatInput
+	end
+	widgetHandler.textOwner = self
+	if not inputHistory[inputHistoryCurrent] or inputHistory[inputHistoryCurrent] ~= '' then
+		if inputHistoryCurrent == 1 or inputHistory[inputHistoryCurrent] ~= inputHistory[inputHistoryCurrent - 1] then
+			inputHistoryCurrent = inputHistoryCurrent + 1
+		end
+		inputHistory[inputHistoryCurrent] = ''
+	end
+	if ctrl then
+		inputMode = ''
+	elseif alt then
+		inputMode = mySpec and 's:' or 'a:'
+	elseif shift then
+		inputMode = 's:'
+	elseif inputMode == nil then
+		inputMode = mySpec and 's:' or 'a:'
+	end
+	Spring.SDLStartTextInput()
+	needsUiRefresh = true
+end
+
+function widget:HandleChatInputFocus()
+	chatInputFocused = true
+end
+
+function widget:HandleChatInputBlur()
+	chatInputFocused = false
 end
 
 function widget:TextInput(char)
@@ -1815,6 +1784,33 @@ function widget:KeyPress(key)
 	return true
 end
 
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- INTERACTIVITY --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+function widget:ActivateChatLine(index)
+	local shownCount = #(dm_handle.chatRows.__raw())
+	local line = chatLines[currentChatLine - (shownCount - index - 1)]
+	Spring.Echo(chatLines)
+	Spring.Echo(index + 1, currentChatLine, #chatLines, config.maxLines, shownCount)
+	Spring.Echo(line)
+	if not line then
+		return
+	end
+	if line.coords then
+		Spring.SetCameraTarget(line.coords[1], line.coords[2], line.coords[3])
+	elseif line.selectUnits then
+		Spring.SelectUnitArray(line.selectUnits)
+		Spring.SendCommands("viewselection")
+	end
+end
+
 function widget:MouseWheel(up)
 	if historyMode and not Spring.IsGUIHidden() then
 		local _, ctrl, _, shift = Spring.GetModKeyState()
@@ -1837,16 +1833,96 @@ function widget:MapDrawCmd(playerID, cmdType, x, y, z)
 	end
 end
 
-function widget:AddConsoleLine(lines, priority)
-	if priority and priority == L_DEPRECATED and not isDevSingle then
-		return
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- COMMANDS --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+local function clearconsoleCmd()
+	orgLines = {}
+	chatLines = {}
+	consoleLines = {}
+	currentChatLine = 0
+	currentConsoleLine = 0
+	needsUiRefresh = true
+end
+
+local function hidespecchatCmd(_, _, params)
+	if params[1] then
+		config.hideSpecChat = (params[1] == '1')
+	else
+		config.hideSpecChat = not config.hideSpecChat
 	end
-	lines = lines:match('^%[f=[0-9]+%] (.*)$') or lines
-	for line in lines:gmatch("[^\n]+") do
-		processAddConsoleLine(spGetGameFrame(), line)
+	Spring.SetConfigInt('HideSpecChat', config.hideSpecChat and 1 or 0)
+	if config.hideSpecChat then
+		spEcho("Hiding all spectator chat")
+	else
+		spEcho("Showing all spectator chat again")
 	end
 	needsUiRefresh = true
 end
+
+local function hidespecchatplayerCmd(_, _, params)
+	if params[1] then
+		config.hideSpecChatPlayer = (params[1] == '1')
+	else
+		config.hideSpecChatPlayer = not config.hideSpecChatPlayer
+	end
+	Spring.SetConfigInt('HideSpecChatPlayer', config.hideSpecChatPlayer and 1 or 0)
+	if config.hideSpecChat then
+		spEcho("Hiding all spectator chat when player")
+	else
+		spEcho("Showing all spectator chat when player again")
+	end
+	needsUiRefresh = true
+end
+
+local function preventhistorymodeCmd()
+	config.showHistoryWhenCtrlShift = not config.showHistoryWhenCtrlShift
+	config.enableShortcutClick = not config.enableShortcutClick
+	if not config.showHistoryWhenCtrlShift then
+		spEcho("Preventing toggling historymode via CTRL+SHIFT")
+	else
+		spEcho("Enabled toggling historymode via CTRL+SHIFT")
+	end
+	needsUiRefresh = true
+end
+
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+-------------------- WIDGET CONFIG --------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+function widget:LanguageChanged()
+	I18N = {
+		energy = Spring.I18N('ui.topbar.resources.energy'):lower(),
+		metal = Spring.I18N('ui.topbar.resources.metal'):lower(),
+		everyone = Spring.I18N('ui.chat.everyone'),
+		allies = Spring.I18N('ui.chat.allies'),
+		spectators = Spring.I18N('ui.chat.spectators'),
+		cmd = Spring.I18N('ui.chat.cmd'),
+		shortcut = Spring.I18N('ui.chat.shortcut'),
+		nohistory = Spring.I18N('ui.chat.nohistory'),
+		scroll = Spring.I18N('ui.chat.scroll', { textColor = "\255\255\255\255", highlightColor = "\255\255\255\001" }),
+		historyChat = Spring.I18N('ui.chat.allies'),
+		historyConsole = "Console",
+	}
+	refreshUnitDefs()
+	needsUiRefresh = true
+end
+
+widget:LanguageChanged()
+
 
 function widget:ViewResize()
 	vsx, vsy = Spring.GetViewGeometry()
@@ -2106,6 +2182,9 @@ function widget:SetConfigData(data)
 			if data.soundErrors then
 				soundErrors = data.soundErrors
 			end
+			-- elseif data.gameID then
+			-- 	prevGameID = data.gameID
+			-- 	prevOrgLines = data.orgLines
 		end
 	end
 	if data.inputHistory ~= nil then
