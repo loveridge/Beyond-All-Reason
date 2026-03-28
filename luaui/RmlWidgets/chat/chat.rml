@@ -279,11 +279,14 @@
 			{{showTextInput}}
 			{{notHoverable}}
 			{{notHoverable && !showTextInput}}
+			{{ctrlPressed}}
+			{{ctrlShiftPressed}}
 		</div>
 		<div id="chat-root" data-model="chat_rml_data" data-if="rootVisible"
 			data-event-mouseover="setWidgetHover(true)"
 			data-event-mouseout="setWidgetHover(false)"
 			data-class-no-pointer-events="notHoverable && !showTextInput">
+
 			<div class="stack console" data-if="showConsoleStack"
 				data-event-mouseover="setConsoleHover(true)"
 				data-event-mouseout="setConsoleHover(false)">
@@ -303,7 +306,7 @@
 						data-class-mapmark-row="row.isMapmark"
 						data-class-system-row="row.isSystem"
 						data-class-console-row="row.isConsole"
-						data-class-clickable="row.clickable"
+						data-class-clickable="row.clickable && ctrlPressed"
 						data-event-click="activateChatLine(i)">
 						<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 						<span class="sep">{{row.separator}}</span>
@@ -317,7 +320,7 @@
 					<span class="history-title">{{historyTitle}}</span>
 					<button data-class-active="isHistoryChat" data-event-click="setHistoryMode('chat')">{{historyChatLabel}}</button>
 					<button data-class-active="isHistoryConsole" data-event-click="setHistoryMode('console')">{{historyConsoleLabel}}</button>
-					<button data-event-click="clearHistoryMode()">{{historyCloseLabel}}</button>
+					<!-- <button data-event-click="clearHistoryMode()">{{historyCloseLabel}}</button> -->
 				</div>
 				<div class="history-list" data-if="!noHistory">
 					<div class="lines">
@@ -329,7 +332,7 @@
 							data-class-system-row="row.isSystem"
 							data-class-console-row="row.isConsole"
 							data-class-clickable="row.clickable"
-							data-event-click="activateChatLine(i)">
+							data-event-click="activateChatLine(i, row.id)">
 							<span class="timestamp">{{row.timestamp}}</span>
 							<span class="speaker" data-style-color="row.speakerStyle">{{row.speaker}}</span>
 							<span class="sep">{{row.separator}}</span>

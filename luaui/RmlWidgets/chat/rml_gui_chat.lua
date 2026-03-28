@@ -129,8 +129,6 @@ local autocompleteText
 local prevAutocompleteLetters
 local lastMessage
 local activationArea = { 0, 0, 0, 0 }
-local chatInputFocused = false
-local pendingInputFocus = false
 local topbarArea
 local scrollingPosY = 0.66
 local consolePosY = 0.9
@@ -149,8 +147,6 @@ local autocompleteUnitCodename = {}
 local addedOptionsList = false
 local needsUiRefresh = true
 local uiSec = 0
-local rootHoverDepth = 0
-local consoleHoverDepth = 0
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
 local anonymousTeamColor = { Spring.GetConfigInt("anonymousColorR", 255) / 255, Spring.GetConfigInt("anonymousColorG", 0) /
 255, Spring.GetConfigInt("anonymousColorB", 0) / 255 }
@@ -344,23 +340,13 @@ local dataModel = {
 	end,
 	setWidgetHover = function(ev, hovering)
 		Spring.Echo("Hover", hovering)
-		if hovering then
-			rootHoverDepth = rootHoverDepth + 1
-		else
-			rootHoverDepth = mathMax(0, rootHoverDepth - 1)
-		end
 		if dm_handle then
-			dm_handle.hoverWidgetArea = (rootHoverDepth > 0)
+			dm_handle.hoverWidgetArea = hovering
 		end
 	end,
 	setConsoleHover = function(ev, hovering)
-		if hovering then
-			consoleHoverDepth = consoleHoverDepth + 1
-		else
-			consoleHoverDepth = mathMax(0, consoleHoverDepth - 1)
-		end
 		if dm_handle then
-			dm_handle.hoverConsoleArea = (consoleHoverDepth > 0)
+			dm_handle.hoverConsoleArea = hovering
 		end
 	end,
 }
@@ -801,10 +787,6 @@ local function cancelChatInput()
 	inputHistoryCurrent = #inputHistory
 	autocompleteText = nil
 	autocompleteWords = {}
-	chatInputFocused = false
-	pendingInputFocus = false
-	rootHoverDepth = 0
-	consoleHoverDepth = 0
 	if dm_handle then
 		dm_handle.hoverWidgetArea = false
 		dm_handle.hoverConsoleArea = false
@@ -1460,14 +1442,6 @@ function widget:OpenInput(ctrl, alt, shift)
 	end
 	Spring.SDLStartTextInput()
 	needsUiRefresh = true
-end
-
-function widget:HandleChatInputFocus()
-	chatInputFocused = true
-end
-
-function widget:HandleChatInputBlur()
-	chatInputFocused = false
 end
 
 function widget:TextInput(char)
